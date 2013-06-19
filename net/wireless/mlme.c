@@ -58,6 +58,7 @@ void cfg80211_send_rx_assoc(struct net_device *dev, struct cfg80211_bss *bss,
 	 */
 	if (status_code != WLAN_STATUS_SUCCESS && wdev->conn &&
 	    cfg80211_sme_failed_reassoc(wdev)) {
+		cfg80211_unhold_bss(bss_from_pub(bss));
 		cfg80211_put_bss(wiphy, bss);
 		goto out;
 	}
@@ -70,6 +71,7 @@ void cfg80211_send_rx_assoc(struct net_device *dev, struct cfg80211_bss *bss,
 		 * do not call connect_result() now because the
 		 * sme will schedule work that does it later.
 		 */
+		cfg80211_unhold_bss(bss_from_pub(bss));
 		cfg80211_put_bss(wiphy, bss);
 		goto out;
 	}
@@ -404,6 +406,8 @@ int __cfg80211_mlme_assoc(struct cfg80211_registered_device *rdev,
 		goto out;
 
 	err = rdev_assoc(rdev, dev, req);
+	if (!err)
+		cfg80211_hold_bss(bss_from_pub(req->bss));
 
 out:
 	if (err) {

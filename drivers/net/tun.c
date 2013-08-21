@@ -144,7 +144,10 @@ struct tun_file {
 	struct fasync_struct *fasync;
 	/* only used for fasnyc */
 	unsigned int flags;
-	u16 queue_index;
+	union {
+		u16 queue_index;
+		unsigned int ifindex;
+	};
 	struct list_head next;
 	struct tun_struct *detached;
 };
@@ -1714,6 +1717,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
 
 		dev_net_set(dev, net);
 		dev->rtnl_link_ops = &tun_link_ops;
+		dev->ifindex = tfile->ifindex;
 
 		tun = netdev_priv(dev);
 		tun->dev = dev;
@@ -1974,6 +1978,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
 	kgid_t group;
 	int sndbuf;
 	int vnet_hdr_sz;
+	unsigned int ifindex;
 	int ret;
 
 #ifdef CONFIG_ANDROID_PARANOID_NETWORK
@@ -2012,6 +2017,19 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
 
 		if (copy_to_user(argp, &ifr, ifreq_len))
 			ret = -EFAULT;
+		goto unlock;
+	}
+	if (cmd == TUNSETIFINDEX) {
+		ret = -EPERM;
+		if (tun)
+			goto unlock;
+
+		ret = -EFAULT;
+		if (copy_from_user(&ifindex, argp, sizeof(ifindex)))
+			goto unlock;
+
+		ret = 0;
+		tfile->ifindex = ifindex;
 		goto unlock;
 	}
 
@@ -2267,6 +2285,7 @@ static int tun_chr_open(struct inode *inode, struct file * file)
 	rcu_assign_pointer(tfile->tun, NULL);
 	tfile->net = get_net(current->nsproxy->net_ns);
 	tfile->flags = 0;
+	tfile->ifindex = 0;
 
 	rcu_assign_pointer(tfile->socket.wq, &tfile->wq);
 	init_waitqueue_head(&tfile->wq.wait);

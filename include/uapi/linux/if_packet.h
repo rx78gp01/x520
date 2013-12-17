@@ -83,7 +83,7 @@ struct tpacket_auxdata {
 	__u16		tp_mac;
 	__u16		tp_net;
 	__u16		tp_vlan_tci;
-	__u16		tp_padding;
+	__u16		tp_vlan_tpid;
 };
 
 /* Rx ring - header status */
@@ -92,8 +92,9 @@ struct tpacket_auxdata {
 #define TP_STATUS_COPY			(1 << 1)
 #define TP_STATUS_LOSING		(1 << 2)
 #define TP_STATUS_CSUMNOTREADY		(1 << 3)
-#define TP_STATUS_VLAN_VALID	(1 << 4) /* auxdata has valid tp_vlan_tci */
+#define TP_STATUS_VLAN_VALID		(1 << 4) /* auxdata has valid tp_vlan_tci */
 #define TP_STATUS_BLK_TMO		(1 << 5)
+#define TP_STATUS_VLAN_TPID_VALID	(1 << 6) /* auxdata has valid tp_vlan_tpid */
 #define TP_STATUS_CSUM_UNNECESSARY	(1 << 7)
 
 /* Tx ring - header status */
@@ -133,12 +134,15 @@ struct tpacket2_hdr {
 	__u32		tp_sec;
 	__u32		tp_nsec;
 	__u16		tp_vlan_tci;
-	__u8		tp_padding[6];
+	__u16		tp_vlan_tpid;
+	__u8		tp_padding[4];
 };
 
 struct tpacket_hdr_variant1 {
 	__u32	tp_rxhash;
 	__u32	tp_vlan_tci;
+	__u16	tp_vlan_tpid;
+	__u16	tp_padding;
 };
 
 struct tpacket3_hdr {
@@ -154,7 +158,7 @@ struct tpacket3_hdr {
 	union {
 		struct tpacket_hdr_variant1 hv1;
 	};
-	__u8		tp_padding[12];
+	__u8		tp_padding[8];
 };
 
 struct tpacket_bd_ts {

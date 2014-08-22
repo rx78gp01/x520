@@ -1277,10 +1277,9 @@ static int smack_mmap_file(struct file *file,
  * Returns 0
  * Further research may be required on this one.
  */
-static int smack_file_set_fowner(struct file *file)
+static void smack_file_set_fowner(struct file *file)
 {
 	file->f_security = smk_of_current();
-	return 0;
 }
 
 /**

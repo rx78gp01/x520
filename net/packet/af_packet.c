@@ -1858,8 +1858,9 @@ static int tpacket_rcv(struct sk_buff *skb, struct net_device *dev,
 
 	if (skb->ip_summed == CHECKSUM_PARTIAL)
 		status |= TP_STATUS_CSUMNOTREADY;
-
-	if (skb->ip_summed == CHECKSUM_UNNECESSARY)
+	else if (skb->pkt_type != PACKET_OUTGOING &&
+		 (skb->ip_summed == CHECKSUM_COMPLETE ||
+		  skb->ip_summed == CHECKSUM_UNNECESSARY))
 		status |= TP_STATUS_CSUM_UNNECESSARY;
 
 	snaplen = skb->len;
@@ -3005,6 +3006,11 @@ static int packet_recvmsg(struct kiocb *iocb, struct socket *sock,
 		aux.tp_status = TP_STATUS_USER;
 		if (skb->ip_summed == CHECKSUM_PARTIAL)
 			aux.tp_status |= TP_STATUS_CSUMNOTREADY;
+		else if (skb->pkt_type != PACKET_OUTGOING &&
+			 (skb->ip_summed == CHECKSUM_COMPLETE ||
+			  skb->ip_summed == CHECKSUM_UNNECESSARY))
+			aux.tp_status |= TP_STATUS_CSUM_UNNECESSARY;
+
 		aux.tp_len = PACKET_SKB_CB(skb)->origlen;
 		aux.tp_snaplen = skb->len;
 		aux.tp_mac = 0;

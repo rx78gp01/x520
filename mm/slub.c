@@ -1487,7 +1487,9 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
 	page_mapcount_reset(page);
 	if (current->reclaim_state)
 		current->reclaim_state->reclaimed_slab += pages;
+	kasan_alloc_pages(page, order);
 	__free_memcg_kmem_pages(page, order);
+
 }
 
 #define need_reserve_slab_rcu						\
@@ -3423,6 +3425,7 @@ void kfree(const void *x)
 	if (unlikely(!PageSlab(page))) {
 		BUG_ON(!PageCompound(page));
 		kfree_hook(x);
+		kasan_alloc_pages(page, compound_order(page));
 		__free_memcg_kmem_pages(page, compound_order(page));
 		return;
 	}

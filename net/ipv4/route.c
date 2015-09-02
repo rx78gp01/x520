@@ -1516,6 +1516,7 @@ static struct rtable *rt_dst_alloc(struct net_device *dev,
 		rt->rt_pmtu = 0;
 		rt->rt_mtu_locked = 0;
 		rt->rt_gateway = 0;
+		rt->rt_uid = 0;
 		rt->rt_uses_gateway = 0;
 		INIT_LIST_HEAD(&rt->rt_uncached);
 
@@ -1585,15 +1586,6 @@ static int ip_route_input_mc(struct sk_buff *skb, __be32 daddr, __be32 saddr,
 #endif
 	rth->dst.output = ip_rt_bug;
 	rth->rt_is_input= 1;
-	rth->rt_iif	= 0;
-	rth->rt_pmtu	= 0;
-	rth->rt_gateway	= 0;
-	rth->rt_uses_gateway = 0;
-	INIT_LIST_HEAD(&rth->rt_uncached);
-	if (our) {
-		rth->dst.input= ip_local_deliver;
-		rth->rt_flags |= RTCF_LOCAL;
-	}
 
 #ifdef CONFIG_IP_MROUTE
 	if (!ipv4_is_local_multicast(daddr) && IN_DEV_MFORWARD(in_dev))
@@ -1703,11 +1695,6 @@ static int __mkroute_input(struct sk_buff *skb,
 	}
 
 	rth->rt_is_input = 1;
-	rth->rt_iif 	= 0;
-	rth->rt_pmtu	= 0;
-	rth->rt_gateway	= 0;
-	rth->rt_uses_gateway = 0;
-	INIT_LIST_HEAD(&rth->rt_uncached);
 	RT_CACHE_STAT_INC(in_slow_tot);
 
 	rth->dst.input = ip_forward;
@@ -1872,11 +1859,6 @@ local_input:
 	rth->dst.tclassid = itag;
 #endif
 	rth->rt_is_input = 1;
-	rth->rt_iif	= 0;
-	rth->rt_pmtu	= 0;
-	rth->rt_gateway	= 0;
-	rth->rt_uses_gateway = 0;
-	INIT_LIST_HEAD(&rth->rt_uncached);
 
 	RT_CACHE_STAT_INC(in_slow_tot);
 	if (res.type == RTN_UNREACHABLE) {

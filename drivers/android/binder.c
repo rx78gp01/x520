@@ -434,7 +434,9 @@ static int task_get_unused_fd_flags(struct binder_proc *proc, int flags)
 	rlim_cur = task_rlimit(proc->tsk, RLIMIT_NOFILE);
 	unlock_task_sighand(proc->tsk, &irqs);
 
+	preempt_enable_no_resched();
 	ret = __alloc_fd(proc->files, 0, rlim_cur, flags);
+	preempt_disable();
 err:
 	mutex_unlock(&proc->files_lock);
 	return ret;
@@ -447,8 +449,11 @@ static void task_fd_install(
 	struct binder_proc *proc, unsigned int fd, struct file *file)
 {
 	mutex_lock(&proc->files_lock);
-	if (proc->files)
+	if (proc->files) {
+		preempt_enable_no_resched();
 		__fd_install(proc->files, fd, file);
+		preempt_disable();
+	}
 	mutex_unlock(&proc->files_lock);
 }
 

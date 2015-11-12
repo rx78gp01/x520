@@ -153,8 +153,8 @@ struct voip_drv_info {
 	uint8_t capture_start;
 	uint8_t playback_start;
 
-	uint8_t playback_instance;
-	uint8_t capture_instance;
+	uint8_t playback_prepare;
+	uint8_t capture_prepare;
 
 	unsigned int play_samp_rate;
 	unsigned int cap_samp_rate;
@@ -692,6 +692,7 @@ static int msm_pcm_playback_prepare(struct snd_pcm_substream *substream)
 	prtd->pcm_count = snd_pcm_lib_period_bytes(substream);
 	prtd->pcm_playback_irq_pos = 0;
 	prtd->pcm_playback_buf_pos = 0;
+	prtd->playback_prepare = 1;
 
 	return 0;
 }
@@ -707,6 +708,7 @@ static int msm_pcm_capture_prepare(struct snd_pcm_substream *substream)
 	prtd->pcm_capture_count = snd_pcm_lib_period_bytes(substream);
 	prtd->pcm_capture_irq_pos = 0;
 	prtd->pcm_capture_buf_pos = 0;
+	prtd->capture_prepare = 1;
 	return ret;
 }
 
@@ -770,10 +772,8 @@ static int msm_pcm_open(struct snd_pcm_substream *substream)
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		prtd->playback_substream = substream;
-		prtd->playback_instance++;
 	} else {
 		prtd->capture_substream = substream;
-		prtd->capture_instance++;
 	}
 	runtime->private_data = prtd;
 err:
@@ -965,11 +965,11 @@ static int msm_pcm_close(struct snd_pcm_substream *substream)
 	mutex_lock(&prtd->lock);
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		prtd->playback_instance--;
+		prtd->playback_prepare = 0;
 	else if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
-		prtd->capture_instance--;
+		prtd->capture_prepare = 0;
 
-	if (!prtd->playback_instance && !prtd->capture_instance) {
+	if (!prtd->playback_prepare && !prtd->capture_prepare) {
 		if (prtd->state == VOIP_STARTED) {
 			prtd->voip_reset = false;
 			prtd->state = VOIP_STOPPED;
@@ -1187,7 +1187,7 @@ static int msm_pcm_prepare(struct snd_pcm_substream *substream)
 	else if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
 		ret = msm_pcm_capture_prepare(substream);
 
-	if (prtd->playback_instance && prtd->capture_instance
+	if (prtd->playback_prepare && prtd->capture_prepare
 	    && (prtd->state != VOIP_STARTED)) {
 		ret = voip_config_vocoder(substream);
 		if (ret < 0) {

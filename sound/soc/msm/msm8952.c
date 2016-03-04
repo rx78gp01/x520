@@ -515,7 +515,7 @@ static int msm_auxpcm_be_params_fixup(struct snd_soc_pcm_runtime *rtd,
 	return 0;
 }
 
-static int msm_pri_rx_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
+static int msm_mi2s_rx_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 				struct snd_pcm_hw_params *params)
 {
 	struct snd_interval *rate = hw_param_interval(params,
@@ -638,22 +638,34 @@ static int msm_mi2s_snd_hw_params(struct snd_pcm_substream *substream,
 }
 
 
+static bool is_mi2s_rx_port(int port_id)
+{
+	bool ret = false;
+
+	switch (port_id) {
+	case AFE_PORT_ID_PRIMARY_MI2S_RX:
+	case AFE_PORT_ID_SECONDARY_MI2S_RX:
+	case AFE_PORT_ID_QUATERNARY_MI2S_RX:
+	case AFE_PORT_ID_QUINARY_MI2S_RX:
+		ret = true;
+		break;
+	default:
+		break;
+	}
+	return ret;
+}
+
 static uint32_t get_mi2s_rx_clk_val(int port_id)
 {
 	uint32_t clk_val;
 
 	/*
-	 *  Derive clock value based on configuration of Primary MI2S rx port,
-	 *  as this port supports dynamic configuration for hifi audio
+	 *  Derive clock value based on sample rate, bits per sample and
+	 *  channel count is used as 2
 	 */
-	if (port_id == AFE_PORT_ID_PRIMARY_MI2S_RX) {
+	if (is_mi2s_rx_port(port_id))
 		clk_val = (mi2s_rx_sample_rate * mi2s_rx_bits_per_sample * 2);
-	} else {
-		if (mi2s_rx_bit_format == SNDRV_PCM_FORMAT_S24_LE)
-			clk_val =  Q6AFE_LPASS_IBIT_CLK_3_P072_MHZ;
-		else
-			clk_val = Q6AFE_LPASS_IBIT_CLK_1_P536_MHZ;
-	}
+
 	pr_debug("%s: MI2S Rx bit clock value: 0x%0x\n", __func__, clk_val);
 	return clk_val;
 }
@@ -2499,7 +2511,7 @@ static struct snd_soc_dai_link msm8952_dai[] = {
 			ASYNC_DPCM_SND_SOC_HW_PARAMS,
 		.be_id = MSM_BACKEND_DAI_PRI_MI2S_RX,
 		.init = &msm_audrx_init,
-		.be_hw_params_fixup = msm_pri_rx_be_hw_params_fixup,
+		.be_hw_params_fixup = msm_mi2s_rx_be_hw_params_fixup,
 		.ops = &msm8952_mi2s_be_ops,
 		.ignore_suspend = 1,
 	},
@@ -2512,7 +2524,7 @@ static struct snd_soc_dai_link msm8952_dai[] = {
 		.codec_dai_name = "msm-stub-rx",
 		.no_pcm = 1,
 		.be_id = MSM_BACKEND_DAI_SECONDARY_MI2S_RX,
-		.be_hw_params_fixup = msm_be_hw_params_fixup,
+		.be_hw_params_fixup = msm_mi2s_rx_be_hw_params_fixup,
 		.ops = &msm8952_sec_mi2s_be_ops,
 		.ignore_suspend = 1,
 	},
@@ -2540,7 +2552,7 @@ static struct snd_soc_dai_link msm8952_dai[] = {
 		.codec_name = "snd-soc-dummy",
 		.no_pcm = 1,
 		.be_id = MSM_BACKEND_DAI_QUATERNARY_MI2S_RX,
-		.be_hw_params_fixup = msm_be_hw_params_fixup,
+		.be_hw_params_fixup = msm_mi2s_rx_be_hw_params_fixup,
 		.ops = &msm8952_quat_mi2s_be_ops,
 		.ignore_pmdown_time = 1, /* dai link has playback support */
 		.ignore_suspend = 1,
@@ -2725,7 +2737,7 @@ static struct snd_soc_dai_link msm8952_dai[] = {
 		.codec_name = "snd-soc-dummy",
 		.no_pcm = 1,
 		.be_id = MSM_BACKEND_DAI_QUINARY_MI2S_RX,
-		.be_hw_params_fixup = msm_be_hw_params_fixup,
+		.be_hw_params_fixup = msm_mi2s_rx_be_hw_params_fixup,
 		.ops = &msm8952_quin_mi2s_be_ops,
 		.ignore_pmdown_time = 1, /* dai link has playback support */
 		.ignore_suspend = 1,

@@ -90,7 +90,7 @@ static const struct vm_special_mapping compat_vdso_spec[] = {
 static struct page *vectors_page[ARRAY_SIZE(compat_vdso_spec)] __ro_after_init;
 #endif
 
-static int alloc_vectors_page(void)
+static int __init alloc_vectors_page(void)
 {
 #ifdef CONFIG_KUSER_HELPERS
 	extern char __kuser_helper_start[], __kuser_helper_end[];

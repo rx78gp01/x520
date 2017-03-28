@@ -11038,13 +11038,13 @@ free_hdd_ctx:
 
    hdd_request_manager_deinit();
 
-   /* FTM/MONITOR mode, WIPHY did not registered
-      If un-register here, system crash will happen */
-   if (!(VOS_FTM_MODE == hdd_get_conparam() ||
-            VOS_MONITOR_MODE == hdd_get_conparam()))
-   {
-      wiphy_unregister(wiphy) ;
-      hdd_wlan_free_wiphy_channels(wiphy);
+	/*
+	 * If there is re_init failure wiphy would have already de-registered
+	 * check the wiphy status before un-registering again
+	 */
+	if (wiphy && wiphy->registered) {
+		wiphy_unregister(wiphy);
+		hdd_wlan_free_wiphy_channels(wiphy);
    }
    wiphy_free(wiphy) ;
    if (hdd_is_ssr_required())

@@ -229,6 +229,8 @@ source "drivers/input/fingerprint/fpc1020_kenzo/Kconfig"
 
 source "drivers/input/fingerprint/goodix/Kconfig"
 
+source "drivers/input/fingerprint/goodix18m/Kconfig"
+
 endif
 
 menu "Hardware I/O ports"

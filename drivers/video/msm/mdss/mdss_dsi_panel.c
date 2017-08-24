@@ -30,6 +30,11 @@
 #define DT_CMD_HDR 6
 #define MIN_REFRESH_RATE 48
 #define DEFAULT_MDP_TRANSFER_TIME 14000
+#ifdef CONFIG_GET_HARDWARE_INFO
+#include <asm/hardware_info.h>
+char tmp_panel_name[100];
+#endif
+
 #ifdef CONFIG_MACH_XIAOMI_KENZO
 #define WRITE_REGISTER
 #define LCM_SUPPORT_READ_VERSION
@@ -2380,6 +2385,12 @@ int mdss_dsi_panel_init(struct device_node *node,
 		pr_info("%s: Panel Name = %s\n", __func__, panel_name);
 		strlcpy(&pinfo->panel_name[0], panel_name, MDSS_MAX_PANEL_LEN);
 	}
+
+#if defined(CONFIG_GET_HARDWARE_INFO)
+	strlcpy(tmp_panel_name, panel_name,100);
+	register_hardware_info(LCM, tmp_panel_name);
+#endif
+
 
 #ifdef CONFIG_MACH_XIAOMI_KENZO
 	#ifdef LCM_SUPPORT_READ_VERSION

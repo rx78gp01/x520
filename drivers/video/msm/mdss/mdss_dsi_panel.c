@@ -864,7 +864,9 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 		if (ctrl->ndx != DSI_CTRL_LEFT)
 			goto end;
 	}
-
+#if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_OEM)
+	synaptics_rmi4_int_enable(rmi4_data_truly,false);
+#endif
 	if (ctrl->off_cmds.cmd_cnt)
 		mdss_dsi_panel_cmds_send(ctrl, &ctrl->off_cmds);
 

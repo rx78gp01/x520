@@ -791,5 +791,14 @@ static inline bool mdss_dsi_cmp_panel_reg(struct dsi_buf status_buf,
 {
 	return status_buf.data[i] == status_val[i];
 }
+#if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_OEM)
+#include "../../../input/touchscreen/synaptics_dsx_oem/synaptics_dsx_core.h"
+extern void synaptics_rmi4_wakeup_gesture(struct synaptics_rmi4_data *rmi4_data, bool enable);
+extern void synaptics_rmi4_sleep_enable(struct synaptics_rmi4_data *rmi4_data,bool enable);
+extern int synaptics_rmi4_int_enable(struct synaptics_rmi4_data *rmi4_data,bool enable);
+extern struct synaptics_rmi4_data *rmi4_data_truly;
+extern bool is_tp_insert;
+extern bool tp_sleep_mode;
+#endif
 
 #endif /* MDSS_DSI_H */

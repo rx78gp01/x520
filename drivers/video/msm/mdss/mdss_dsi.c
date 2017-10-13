@@ -274,7 +274,15 @@ static int mdss_dsi_panel_power_off(struct mdss_panel_data *pdata)
 
 	ctrl_pdata = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
-
+#if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_OEM)
+	if(is_tp_insert)
+	{
+		synaptics_rmi4_wakeup_gesture(rmi4_data_truly, true);
+		synaptics_rmi4_sleep_enable(rmi4_data_truly, true);
+		msleep(50);
+		tp_sleep_mode = true;
+	}
+#endif
 	ret = mdss_dsi_panel_reset(pdata, 0);
 	if (ret) {
 		pr_warn("%s: Panel reset failed. rc=%d\n", __func__, ret);

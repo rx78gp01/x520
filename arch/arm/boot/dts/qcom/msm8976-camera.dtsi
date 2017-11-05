@@ -212,7 +212,7 @@
 				"vfe_clk_src", "camss_vfe_vfe_clk",
 				"camss_csi_vfe_clk", "iface_clk",
 				"bus_clk", "iface_ahb_clk";
-			qcom,clock-rates = <0 0 266670000 0 0 0 0 0>;
+			qcom,clock-rates = <0 0 266666667 0 0 0 0 0>;
 			qos-entries = <8>;
 			qos-regs = <0x2C4 0x2C8 0x2CC 0x2D0 0x2D4 0x2D8
 				0x2DC 0x2E0>;
@@ -262,7 +262,7 @@
 				"vfe_clk_src", "camss_vfe_vfe_clk",
 				"camss_csi_vfe_clk", "iface_clk",
 				"bus_clk", "iface_ahb_clk";
-			qcom,clock-rates = <0 0 266670000 0 0 0 0 0>;
+			qcom,clock-rates = <0 0 266666667 0 0 0 0 0>;
 			qos-entries = <8>;
 			qos-regs = <0x2C4 0x2C8 0x2CC 0x2D0 0x2D4 0x2D8
 				0x2DC 0x2E0>;

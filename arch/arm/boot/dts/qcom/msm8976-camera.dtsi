@@ -238,7 +238,7 @@
 				0xcccc0011	0xcccc0011
 				0xcccc0011	0x00000110>;
 			max-clk-nominal = <320000000>;
-			max-clk-turbo = <466000000>;
+			max-clk-turbo = <533333333>;
 		};
 
 		vfe1: qcom,vfe1@1b14000 {
@@ -288,7 +288,7 @@
 				0xcccc0011	0xcccc0011
 				0xcccc0011	0x00000110>;
 			max-clk-nominal = <320000000>;
-			max-clk-turbo = <466000000>;
+			max-clk-turbo = <533333333>;
 		};
 	};
 

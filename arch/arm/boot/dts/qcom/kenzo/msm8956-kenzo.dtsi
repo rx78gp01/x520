@@ -1771,11 +1771,12 @@
 		qcom,sw-power-collapse;
 		qcom,reset-clock-control;
 		qcom,regulator-scaling;
-		qcom,max-hw-load = <979200>; /* 3840 x 2176 @ 30 fps */
+		qcom,max-hw-load = <999200>; /* 3840 x 2176 @ 30 fps */
 		qcom,dcvs-min-load = <734400>; /* 1920 x 1088 @ 90fps */
 		qcom,dcvs-min-mbperframe = <32400>; /* 3840 x 2160 */
 
 		qcom,load-freq-tbl =
+			<999200 621333333 0xffffffff>, /* TURBO, UHD60D   */
 			<979200 466000000 0x55555555>, /* TURBO, UHD30E   */
 			<979200 400000000 0xffffffff>, /* NOM+ , UHD30D   */
 			<734400 360000000 0xffffffff>, /* NOM  , 1080p90D */
@@ -1812,10 +1813,10 @@
 			<100000000 RPM_SMD_REGULATOR_LEVEL_SVS>,
 			<133333333 RPM_SMD_REGULATOR_LEVEL_SVS>,
 			<228570000 RPM_SMD_REGULATOR_LEVEL_SVS>,
-			<310667000 RPM_SMD_REGULATOR_LEVEL_SVS_PLUS>,
 			<360000000 RPM_SMD_REGULATOR_LEVEL_NOM>,
 			<400000000 RPM_SMD_REGULATOR_LEVEL_NOM_PLUS>,
-			<466000000 RPM_SMD_REGULATOR_LEVEL_TURBO>;
+			<466000000 RPM_SMD_REGULATOR_LEVEL_TURBO>,
+			<621333333 RPM_SMD_REGULATOR_LEVEL_TURBO>;
 
 		qcom,vp9d-clock-voltage-tbl =
 			<72727200 RPM_SMD_REGULATOR_LEVEL_SVS>,
@@ -1823,9 +1824,9 @@
 			<100000000 RPM_SMD_REGULATOR_LEVEL_SVS>,
 			<133333333 RPM_SMD_REGULATOR_LEVEL_SVS>,
 			<228570000 RPM_SMD_REGULATOR_LEVEL_SVS_PLUS>,
-			<310667000 RPM_SMD_REGULATOR_LEVEL_NOM>,
 			<360000000 RPM_SMD_REGULATOR_LEVEL_NOM_PLUS>,
-			<400000000 RPM_SMD_REGULATOR_LEVEL_TURBO>;
+			<400000000 RPM_SMD_REGULATOR_LEVEL_TURBO>,
+			<621333333 RPM_SMD_REGULATOR_LEVEL_TURBO>;
 
 		qcom,vidc-iommu-domains {
 			qcom,domain-ns {
@@ -1882,8 +1883,8 @@
 					<63 512 574000 0>,  /* 1080p 30 fps */
 					<63 512 1148000 0>, /* 1080p 60 fps */
 					<63 512 1967000 0>, /* UHD   24 fps */
-					<63 512 2458000 0>, /* 4K    24 fps */
-					<63 512 2458000 0>; /* UHD   30 fps */
+					<63 512 2458000 0>, /* 4K    30 fps */
+					<63 512 5916000 0>; /* UHD   60 fps */
 				qcom,bus-configs = <0xffffffff>; /* all decoders */
 			};
 

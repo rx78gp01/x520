@@ -862,6 +862,7 @@ static int put_v4l2_ext_controls32(struct v4l2_ext_controls __user *kp, struct v
 struct v4l2_event32 {
 	__u32				type;
 	union {
+		compat_s64		value64;
 		struct v4l2_event_vsync		vsync;
 		struct v4l2_event_ctrl		ctrl;
 		struct v4l2_event_frame_sync	frame_sync;

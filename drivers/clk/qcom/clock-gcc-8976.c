@@ -640,8 +640,8 @@ static struct rcg_clk cci_clk_src = {
 static struct clk_freq_tbl ftbl_cpp_clk_src[] = {
 	F( 160000000,          gpll0,    5,    0,     0),
 	F( 240000000,      gpll4_aux,    5,    0,     0),
-	F( 320000000,          gpll0,  2.5,    0,     0),
 	F( 400000000,          gpll0,    2,    0,     0),
+	F( 480000000,      gpll4_aux,  2.5,    0,     0),
 	F( 600000000,      gpll4_aux,    2,    0,     0),
 	F_END
 };
@@ -656,7 +656,7 @@ static struct rcg_clk cpp_clk_src = {
 		.dbg_name = "cpp_clk_src",
 		.ops = &clk_ops_rcg,
 		VDD_DIG_FMAX_MAP5(LOWER, 160000000, LOW, 240000000,
-		NOMINAL, 320000000, NOM_PLUS, 400000000, HIGH, 600000000),
+		NOMINAL, 400000000, NOM_PLUS, 480000000, HIGH, 600000000),
 		CLK_INIT(cpp_clk_src.c),
 	},
 };

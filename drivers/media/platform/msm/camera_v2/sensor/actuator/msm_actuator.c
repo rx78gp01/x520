@@ -58,7 +58,7 @@ static int32_t msm_actuator_piezo_set_default_focus(
 	CDBG("Enter\n");
 
 	if (a_ctrl->i2c_reg_tbl == NULL) {
-		pr_err("failed. i2c reg tabl is NULL");
+		pr_err("failed. i2c reg table is NULL");
 		return -EFAULT;
 	}
 
@@ -110,7 +110,7 @@ static void msm_actuator_parse_i2c_params(struct msm_actuator_ctrl_t *a_ctrl,
 	}
 
 	if (a_ctrl->i2c_reg_tbl == NULL) {
-		pr_err("failed. i2c reg tabl is NULL");
+		pr_err("failed. i2c reg table is NULL");
 		return;
 	}
 
@@ -577,7 +577,7 @@ static int32_t msm_actuator_piezo_move_focus(
 	}
 
 	if (a_ctrl->i2c_reg_tbl == NULL) {
-		pr_err("failed. i2c reg tabl is NULL");
+		pr_err("failed. i2c reg table is NULL");
 		return -EFAULT;
 	}
 
@@ -644,7 +644,7 @@ static int32_t msm_actuator_move_focus(
 		return -EFAULT;
 	}
 	if (a_ctrl->i2c_reg_tbl == NULL) {
-		pr_err("failed. i2c reg tabl is NULL");
+		pr_err("failed. i2c reg table is NULL");
 		return -EFAULT;
 	}
 	if (dest_step_pos > a_ctrl->total_steps) {
@@ -762,6 +762,10 @@ static int32_t msm_actuator_bivcm_move_focus(
 	}
 	if ((dir > MOVE_FAR) || (dir < MOVE_NEAR)) {
 		pr_err("Invalid direction = %d\n", dir);
+		return -EFAULT;
+	}
+	if (a_ctrl->i2c_reg_tbl == NULL) {
+		pr_err("failed. i2c reg table is NULL");
 		return -EFAULT;
 	}
 	if (dest_step_pos > a_ctrl->total_steps) {
@@ -1222,7 +1226,12 @@ static int32_t msm_actuator_set_position(
 		return -EFAULT;
 	}
 
-	if (a_ctrl->actuator_state != ACT_ENABLE_STATE) {
+	if (a_ctrl->i2c_reg_tbl == NULL) {
+		pr_err("failed. i2c reg table is NULL");
+		return -EFAULT;
+	}
+
+	if (a_ctrl->actuator_state != ACT_OPS_ACTIVE) {
 		pr_err("failed. Invalid actuator state.");
 		return -EFAULT;
 	}

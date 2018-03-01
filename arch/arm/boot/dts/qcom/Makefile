@@ -67,8 +67,7 @@ dtb-$(CONFIG_ARCH_MSM8909) += msm8909-sim.dtb \
 	msm8208-qhd-rcm.dtb
 ifeq ($(CONFIG_PRODUCT_S2),y)
 dtb-$(CONFIG_PRODUCT_S2) += s2.dtb
-else
-ifeq ($(CONFIG_MACH_XIAOMI_HYDROGEN),y)
+else ifeq ($(CONFIG_MACH_XIAOMI_HYDROGEN),y)
 dtb-$(CONFIG_ARCH_MSM8916) += hydrogen-msm8956-mtp.dtb \
 	hydrogen-msm8956-v1.1-mtp.dtb \
 	hydrogen-msm8976-mtp.dtb \

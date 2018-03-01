@@ -64,7 +64,11 @@ static void *emergency_dload_mode_addr;
 static bool scm_dload_supported;
 
 static int dload_set(const char *val, struct kernel_param *kp);
+#ifdef CONFIG_PRODUCT_S2
+static int download_mode = 1;
+#else
 static int download_mode;
+#endif
 module_param_call(download_mode, dload_set, param_get_int,
 			&download_mode, 0644);
 static int panic_prep_restart(struct notifier_block *this,
@@ -121,6 +125,34 @@ static void set_dload_mode(int on)
 	dload_mode_enabled = on;
 }
 
+#ifdef CONFIG_PRODUCT_S2
+
+static void enable_emergency_dload_mode(void)
+{
+	int ret;
+
+	if (emergency_dload_mode_addr) {
+		__raw_writel(EMERGENCY_DLOAD_MAGIC1,
+				emergency_dload_mode_addr);
+		__raw_writel(EMERGENCY_DLOAD_MAGIC2,
+				emergency_dload_mode_addr +
+				sizeof(unsigned int));
+		__raw_writel(EMERGENCY_DLOAD_MAGIC3,
+				emergency_dload_mode_addr +
+				(2 * sizeof(unsigned int)));
+
+		/* Need disable the pmic wdt, then the emergency dload mode
+		 * will not auto reset. */
+		qpnp_pon_wd_config(0);
+		mb();
+	}
+
+	ret = scm_set_dload_mode(SCM_EDLOAD_MODE, 0);
+	if (ret)
+		pr_err("Failed to set secure EDLOAD mode: %d\n", ret);
+}
+#endif
+
 static int dload_set(const char *val, struct kernel_param *kp)
 {
 	int ret;
@@ -146,8 +178,16 @@ int get_dload_mode(void)
 {
 	return download_mode;
 }
+
 #else
 #define set_dload_mode(x) do {} while (0)
+
+#ifdef CONFIG_PRODUCT_S2
+static void enable_emergency_dload_mode(void)
+{
+	pr_err("dload mode is not enabled on target\n");
+}
+#endif
 
 static bool get_dload_mode(void)
 {
@@ -260,6 +300,10 @@ static void msm_restart_prepare(const char *cmd)
 			if (!ret)
 				__raw_writel(0x6f656d00 | (code & 0xff),
 					     restart_reason);
+#ifdef CONFIG_PRODUCT_S2
+		} else if (!strncmp(cmd, "edl", 3)) {
+			enable_emergency_dload_mode();
+#endif
 		} else {
 			qpnp_pon_set_restart_reason(
 				PON_RESTART_REASON_NORMAL);

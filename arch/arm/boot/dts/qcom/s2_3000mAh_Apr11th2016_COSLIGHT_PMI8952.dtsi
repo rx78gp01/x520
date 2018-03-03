@@ -6,7 +6,7 @@ qcom,S2_msm8952_coslight_3000mAh {
 	qcom,batt-id-kohm = <200>;
 	qcom,battery-beta = <3380>;
 	qcom,battery-type = "S2_msm8952_coslight_3000mAh";
-	qcom,fastchg-current-ma = <4500>;
+	qcom,fastchg-current-ma = <2000>;
 	qcom,fg-cc-cv-threshold-mv = <4390>;
 	qcom,chg-rslow-comp-c1 = <3995131>;
 	qcom,chg-rslow-comp-c2 = <7868012>;

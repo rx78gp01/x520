@@ -26,14 +26,6 @@
 
 / {
 	memory {
-		ramoops_mem: ramoops_region@0 {
-			linux,reserve-contiguous-region;
-			linux,reserve-region;
-			reg = <0x0 0x9ff00000 0x0 0x00100000>;
-			linux,remove-completely;
-			label = "ramoops_mem";
-		};
-
 		other_ext_mem: other_ext_region@0 {
 			/delete-property/ reg;
 			reg = <0x0 0x84A00000 0x0 0x1E00000>;

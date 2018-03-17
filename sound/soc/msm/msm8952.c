@@ -1767,6 +1767,18 @@ static void *def_msm8952_wcd_mbhc_cal(void)
 	 * 210-290 == Button 2
 	 * 360-680 == Button 3
 	 */
+#ifdef CONFIG_SND_SOC_LEECO
+	btn_low[0] =100;
+	btn_high[0] = 100;
+	btn_low[1] = 250;
+	btn_high[1] = 250;
+	btn_low[2] = 420;
+	btn_high[2] = 420;
+	btn_low[3] = 420;
+	btn_high[3] = 420;
+	btn_low[4] = 420;
+	btn_high[4] = 420;
+#else
 	btn_low[0] = 75;
 	btn_high[0] = 75;
 	btn_low[1] = 150;
@@ -1777,6 +1789,7 @@ static void *def_msm8952_wcd_mbhc_cal(void)
 	btn_high[3] = 450;
 	btn_low[4] = 500;
 	btn_high[4] = 500;
+#endif
 
 	return msm8952_wcd_cal;
 }

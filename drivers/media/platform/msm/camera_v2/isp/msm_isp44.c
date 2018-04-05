@@ -956,10 +956,12 @@ static int msm_vfe44_fetch_engine_start(struct vfe_device *vfe_dev,
 			vfe_dev->buf_mgr, fe_cfg->session_id,
 			fe_cfg->stream_id);
 		vfe_dev->fetch_engine_info.bufq_handle = bufq_handle;
+	mutex_lock(&vfe_dev->buf_mgr->lock);
 		rc = vfe_dev->buf_mgr->ops->get_buf_by_index(
 			vfe_dev->buf_mgr, bufq_handle, fe_cfg->buf_idx, &buf);
 		if (rc < 0) {
 			pr_err("%s: No fetch buffer\n", __func__);
+		mutex_unlock(&vfe_dev->buf_mgr->lock);
 			return -EINVAL;
 		}
 		mapped_info = buf->mapped_info[0];
@@ -979,7 +981,7 @@ static int msm_vfe44_fetch_engine_start(struct vfe_device *vfe_dev,
 
 	msm_camera_io_w_mb(0x10000, vfe_dev->vfe_base + 0x4C);
 	msm_camera_io_w_mb(0x20000, vfe_dev->vfe_base + 0x4C);
-
+	mutex_unlock(&vfe_dev->buf_mgr->lock);
 	ISP_DBG("%s: Fetch Engine ready\n", __func__);
 	return 0;
 }

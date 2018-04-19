@@ -7808,7 +7808,7 @@ void __cpuinit init_idle(struct task_struct *idle, int cpu)
 static void get_adjusted_cpumask(const struct task_struct *p,
 	struct cpumask *new_mask, const struct cpumask *old_mask)
 {
-	static const unsigned long little_cluster_cpus = 0xf;
+	static const unsigned long little_cluster_cpus = 0xff;
 
 	/* Force all unbound kthreads onto the little cluster */
 	if (p->flags & PF_KTHREAD && cpumask_weight(old_mask) > 1)

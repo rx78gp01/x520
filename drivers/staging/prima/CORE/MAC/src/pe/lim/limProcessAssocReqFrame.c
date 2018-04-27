@@ -706,11 +706,11 @@ limProcessAssocReqFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,
                                         pAssocReq->rsn.length, 
                                         &Dot11fIERSN) != DOT11F_PARSE_SUCCESS)
                     {
-                        limLog(pMac, LOG1,
-                            FL("Invalid RSNIE received"));
+                        limLog(pMac, LOGE,
+                               FL("Invalid RSNIE received"));
                         limSendAssocRspMgmtFrame(pMac,
-                            eSIR_MAC_INVALID_RSN_IE_CAPABILITIES_STATUS,
-                            1, pHdr->sa, subType, 0,psessionEntry);
+                              eSIR_MAC_INVALID_RSN_IE_CAPABILITIES_STATUS,
+                              1, pHdr->sa, subType, 0,psessionEntry);
                         goto error;
                     }
 
@@ -786,8 +786,8 @@ limProcessAssocReqFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,
                     {
                         limLog(pMac, LOGE, FL("Invalid WPA IE"));
                         limSendAssocRspMgmtFrame(pMac,
-                                eSIR_MAC_INVALID_INFORMATION_ELEMENT_STATUS,
-                                1, pHdr->sa, subType, 0,psessionEntry);
+                            eSIR_MAC_INVALID_INFORMATION_ELEMENT_STATUS,
+                            1, pHdr->sa, subType, 0,psessionEntry);
                         goto error;
                     }
                     /* check the groupwise and pairwise cipher suites */

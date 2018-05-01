@@ -46,10 +46,12 @@ struct gf_key_map
 
 #define GF_FASYNC   1	/*If support fasync mechanism.*/
 
+#ifdef CONFIG_GOODIX_NETLINK
 #define GF_NETLINK_ENABLE 1
 #define GF_NET_EVENT_IRQ 0
 #define GF_NET_EVENT_FB_BLACK 1
 #define GF_NET_EVENT_FB_UNBLACK 2
+#endif
 
 struct gf_dev {
 	dev_t devt;

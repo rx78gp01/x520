@@ -2,9 +2,3 @@ config GOODIX_FP
 	tristate "Goodix GFX18M fingerprint drvier support"
 	help
 	  Say Y here to enable goodix fingerprint driver support!
-
-config GOODIX_NETLINK
-	tristate "Goodix GFX18M fingerprint netlink support"
-	depends on GOODIX_FP
-	help
-	  Say Y here to enable goodix fingerprint netlink support!

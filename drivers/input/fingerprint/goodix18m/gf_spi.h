@@ -35,22 +35,14 @@ struct gf_key_map
 #define  GF_IOC_PM_FBCABCK  _IO(GF_IOC_MAGIC, 8)
 #define  GF_IOC_POWER_ON   _IO(GF_IOC_MAGIC, 9)
 #define  GF_IOC_POWER_OFF  _IO(GF_IOC_MAGIC, 10)
-#define  GF_IOC_ENABLE_GPIO   _IO(GF_IOC_MAGIC, 11)
-#define  GF_IOC_DISABLE_GPIO  _IO(GF_IOC_MAGIC, 12)
 
-#define  GF_IOC_MAXNR    13
+#define  GF_IOC_MAXNR    11
 
 /*#define AP_CONTROL_CLK       1 */
 #define  USE_PLATFORM_BUS    1
 //#define  USE_SPI_BUS	       1
 
 #define GF_FASYNC   1	/*If support fasync mechanism.*/
-
-#define GF_NETLINK_ENABLE 1
-#define GF_NET_EVENT_IRQ 0
-#define GF_NET_EVENT_FB_BLACK 1
-#define GF_NET_EVENT_FB_UNBLACK 2
-
 struct gf_dev {
 	dev_t devt;
 	struct list_head device_entry;
@@ -79,7 +71,7 @@ struct gf_dev {
 	char fb_black;
 };
 
-int gf_parse_dts(struct gf_dev *gf_dev);
+int gf_parse_dts(struct gf_dev* gf_dev);
 void gf_cleanup(struct gf_dev *gf_dev);
 
 int gf_power_on(struct gf_dev *gf_dev);
@@ -88,7 +80,4 @@ int gf_power_off(struct gf_dev *gf_dev);
 int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms);
 int gf_irq_num(struct gf_dev *gf_dev);
 
-void sendnlmsg(char *message);
-int netlink_init(void);
-void netlink_exit(void);
 #endif /*__GF_SPI_H*/

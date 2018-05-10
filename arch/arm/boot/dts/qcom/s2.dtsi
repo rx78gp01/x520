@@ -415,11 +415,13 @@
 		vcc_spi-supply  = <&pm8950_l10>;
 		vdd_ana-supply  = <&pm8950_l10>;
 		vdd_io-supply   = <&pm8950_l10>;
+		qcom,vdd_ana-always-on;
 
 		goodix,gpio_reset = <&msm_gpio 110 0x00>;
 		goodix,gpio_irq = <&msm_gpio 106 0x00>;
-		goodix,gpio_pwr = <&msm_gpio 119 0>;
-		
+
+		pinctrl-names = "goodix_irq_active";
+		pinctrl-0 = <&goodix_irq_active>;
 	};
 
 	sound-9335 {

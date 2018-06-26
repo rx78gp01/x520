@@ -252,6 +252,7 @@ static struct dentry *__sdcardfs_lookup(struct dentry *dentry,
 		unsigned int flags, struct path *lower_parent_path, userid_t id)
 {
 	int err = 0;
+	int retry = 0;
 	struct vfsmount *lower_dir_mnt;
 	struct dentry *lower_dir_dentry = NULL;
 	struct dentry *lower_dentry;
@@ -274,6 +275,7 @@ static struct dentry *__sdcardfs_lookup(struct dentry *dentry,
 	lower_dir_dentry = lower_parent_path->dentry;
 	lower_dir_mnt = lower_parent_path->mnt;
 
+retry_lookup:
 	/* Use vfs_path_lookup to check if the dentry exists or not */
 	err = vfs_path_lookup(lower_dir_dentry, lower_dir_mnt, name->name, 0,
 				&lower_path);
@@ -373,12 +375,17 @@ put_name:
 	if (IS_ERR(lower_dentry))
 		return lower_dentry;
 	if (!lower_dentry) {
+		if (retry < 4) {
 		/* We called vfs_path_lookup earlier, and did not get a negative
 		 * dentry then. Don't confuse the lower filesystem by forcing
 		 * one on it now...
 		 */
+		retry += 1;
+		goto retry_lookup;
+		} else {
 		err = -ENOENT;
 		goto out;
+		}
 	}
 
 	lower_path.dentry = lower_dentry;

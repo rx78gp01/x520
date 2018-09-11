@@ -1,5 +1,4 @@
 /* Copyright (c) 2012-2015, The Linux Foundation. All rights reserved.
- * Copyright (C) 2016 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -53,8 +52,6 @@ enum pon_restart_reason {
 	PON_RESTART_REASON_RECOVERY	= 0x01,
 	PON_RESTART_REASON_BOOTLOADER	= 0x02,
 	PON_RESTART_REASON_RTC		= 0x03,
-	PON_RESTART_REASON_NORMAL	= 0x20,
-	PON_RESTART_REASON_PANIC	= 0x21,
 };
 
 #ifdef CONFIG_QPNP_POWER_ON

@@ -5699,7 +5699,8 @@ static void smbchg_external_power_changed(struct power_supply *psy)
 
 		read_usb_type(chip, &usb_type_name, &usb_supply_type);
 		if (usb_supply_type == POWER_SUPPLY_TYPE_USB_DCP) {
-			schedule_delayed_work(&chip->hvdcp_det_work,
+			queue_delayed_work(system_power_efficient_wq,
+				&chip->hvdcp_det_work,
 				msecs_to_jiffies(HVDCP_NOTIFY_MS));
 			if (chip->parallel.use_parallel_aicl) {
 				INIT_COMPLETION(chip->hvdcp_det_done);

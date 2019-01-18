@@ -674,7 +674,7 @@
 	qcom,hold-soc-while-full;
 	qcom,ext-sense-type;
 	qcom,fg-delta-soc = <1>;
-	qcom,fg-cutoff-voltage-mv = <3200>;
+	qcom,fg-cutoff-voltage-mv = <3300>;
 };
 
 &i2c_2 {

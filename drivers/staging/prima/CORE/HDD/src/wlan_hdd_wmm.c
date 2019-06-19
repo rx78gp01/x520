@@ -1910,12 +1910,12 @@ void hdd_log_ip_addr(struct sk_buff *skb)
       pIpHdr = (struct iphdr *)&pPkt[sizeof(pHdr->eth_II)];
 
       buf = (char *)&pIpHdr->saddr;
-      VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
+      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_DEBUG,
                "%s: src addr %d:%d:%d:%d", __func__,
                buf[0], buf[1], buf[2], buf[3]);
 
       buf = (char *)&pIpHdr->daddr;
-      VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
+      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_DEBUG,
                "%s: dst addr %d:%d:%d:%d", __func__,
                buf[0], buf[1], buf[2], buf[3]);
    }
@@ -1924,11 +1924,11 @@ void hdd_log_ip_addr(struct sk_buff *skb)
       pIpHdr = (struct iphdr *)&pPkt[sizeof(pHdr->eth_8023)];
 
       buf = (char *)&pIpHdr->saddr;
-      VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
+      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_DEBUG,
                "%s: src addr "IPv6_ADDR_STR, __func__, IPv6_ADDR_ARRAY(buf));
 
       buf = (char *)&pIpHdr->daddr;
-      VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
+      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_DEBUG,
                "%s: dst addr "IPv6_ADDR_STR, __func__, IPv6_ADDR_ARRAY(buf));
    }
    else if ((ntohs(pHdr->eth_II.h_proto) < WLAN_MIN_PROTO) &&
@@ -1941,12 +1941,12 @@ void hdd_log_ip_addr(struct sk_buff *skb)
          pIpHdr = (struct iphdr *)&pPkt[sizeof(pHdr->eth_8023)];
 
          buf = (char *)&pIpHdr->saddr;
-         VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
+         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_DEBUG,
                   "%s: src addr %d:%d:%d:%d", __func__,
                   buf[0], buf[1], buf[2], buf[3]);
 
          buf = (char *)&pIpHdr->daddr;
-         VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
+         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_DEBUG,
                   "%s: dst addr %d:%d:%d:%d", __func__,
                   buf[0], buf[1], buf[2], buf[3]);
       }
@@ -1955,11 +1955,11 @@ void hdd_log_ip_addr(struct sk_buff *skb)
          pIpHdr = (struct iphdr *)&pPkt[sizeof(pHdr->eth_8023)];
 
          buf = (char *)&pIpHdr->saddr;
-         VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
+         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_DEBUG,
                "%s: src addr "IPv6_ADDR_STR, __func__, IPv6_ADDR_ARRAY(buf));
 
          buf = (char *)&pIpHdr->daddr;
-         VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
+         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_DEBUG,
                 "%s: dst addr "IPv6_ADDR_STR, __func__, IPv6_ADDR_ARRAY(buf));
       }
    }

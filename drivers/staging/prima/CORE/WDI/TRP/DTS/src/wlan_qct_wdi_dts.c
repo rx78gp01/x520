@@ -604,7 +604,7 @@ static void WDTS_RxPacketDump(vos_pkt_t *pFrame,
     tpSirMacMgmtHdr pHdr;
 
     if (NULL == pRxMetadata) {
-        VOS_TRACE(VOS_MODULE_ID_WDI, VOS_TRACE_LEVEL_ERROR,
+        VOS_TRACE(VOS_MODULE_ID_WDI, VOS_TRACE_LEVEL_DEBUG,
                   "%s: RX Meta data info is NULL", __func__);
         return;
     }
@@ -613,35 +613,35 @@ static void WDTS_RxPacketDump(vos_pkt_t *pFrame,
 
     /* RX packet type*/
     if (pRxMetadata->bcast)
-         VOS_TRACE(VOS_MODULE_ID_WDI, VOS_TRACE_LEVEL_ERROR,
+         VOS_TRACE(VOS_MODULE_ID_WDI, VOS_TRACE_LEVEL_DEBUG,
                    "%s RX Data frame is BC", __func__);
     else if (pHdr->da[0] & 0x01)
-         VOS_TRACE(VOS_MODULE_ID_WDI, VOS_TRACE_LEVEL_ERROR,
+         VOS_TRACE(VOS_MODULE_ID_WDI, VOS_TRACE_LEVEL_DEBUG,
                    "%s RX Data frame is MC", __func__);
     else
-         VOS_TRACE(VOS_MODULE_ID_WDI, VOS_TRACE_LEVEL_ERROR,
+         VOS_TRACE(VOS_MODULE_ID_WDI, VOS_TRACE_LEVEL_DEBUG,
                    "%s RX Data frame is UC", __func__);
 
     /* 802.11 packet type, subtype */
     if (WDI_MAC_MGMT_FRAME == pRxMetadata->type) {
-       VOS_TRACE(VOS_MODULE_ID_WDI, VOS_TRACE_LEVEL_ERROR,
+       VOS_TRACE(VOS_MODULE_ID_WDI, VOS_TRACE_LEVEL_DEBUG,
                  "%s: Management subtype:%d SA:"MAC_ADDRESS_STR" DA:"
                  MAC_ADDRESS_STR, __func__, pRxMetadata->subtype,
                  MAC_ADDR_ARRAY(pHdr->sa), MAC_ADDR_ARRAY(pHdr->da));
         vos_set_rx_wow_dump(false);
     } else if (WDI_MAC_CTRL_FRAME == pRxMetadata->type) {
-        VOS_TRACE(VOS_MODULE_ID_WDI, VOS_TRACE_LEVEL_ERROR,
+        VOS_TRACE(VOS_MODULE_ID_WDI, VOS_TRACE_LEVEL_DEBUG,
                   "%s: Control subtype:%d SA:"MAC_ADDRESS_STR" DA:"
                   MAC_ADDRESS_STR, __func__, pRxMetadata->subtype,
                   MAC_ADDR_ARRAY(pHdr->sa), MAC_ADDR_ARRAY(pHdr->da));
         vos_set_rx_wow_dump(false);
     } else if (WDI_MAC_DATA_FRAME == pRxMetadata->type) {
-        VOS_TRACE(VOS_MODULE_ID_WDI, VOS_TRACE_LEVEL_ERROR,
+        VOS_TRACE(VOS_MODULE_ID_WDI, VOS_TRACE_LEVEL_DEBUG,
                   "%s: Data subtype:%d SA:"MAC_ADDRESS_STR" DA:"
                   MAC_ADDRESS_STR, __func__, pRxMetadata->subtype,
                   MAC_ADDR_ARRAY(pHdr->sa), MAC_ADDR_ARRAY(pHdr->da));
     } else
-        VOS_TRACE(VOS_MODULE_ID_WDI, VOS_TRACE_LEVEL_ERROR,
+        VOS_TRACE(VOS_MODULE_ID_WDI, VOS_TRACE_LEVEL_DEBUG,
                   "%s: Unknown frame SA:"MAC_ADDRESS_STR,
                    __func__, MAC_ADDR_ARRAY(pHdr->sa));
 }

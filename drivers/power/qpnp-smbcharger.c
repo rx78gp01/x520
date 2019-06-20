@@ -904,7 +904,7 @@ static int get_prop_batt_status(struct smbchg_chip *chip)
 	else
 		status = POWER_SUPPLY_STATUS_CHARGING;
 out:
-	pr_smb_rt(PR_MISC, "CHGR_STS = 0x%02x\n", reg);
+	pr_smb_rt(PR_DUMP, "CHGR_STS = 0x%02x\n", reg);
 	return status;
 }
 
@@ -2977,7 +2977,7 @@ static int smbchg_calc_max_flash_current(struct smbchg_chip *chip)
 	 * before collapsing the battery. (available power/ flash input voltage)
 	 */
 	avail_flash_ua = div64_s64(avail_flash_power_fw, vin_flash_uv * MCONV);
-	pr_smb(PR_MISC,
+	pr_smb(PR_DUMP,
 		"avail_iflash=%lld, ocv=%d, ibat=%d, rbatt=%d\n",
 		avail_flash_ua, ocv_uv, ibat_now, rbatt_uohm);
 	return (int)avail_flash_ua;
@@ -3217,7 +3217,7 @@ static void smbchg_vfloat_adjust_check(struct smbchg_chip *chip)
 		return;
 
 	smbchg_stay_awake(chip, PM_REASON_VFLOAT_ADJUST);
-	pr_smb(PR_STATUS, "Starting vfloat adjustments\n");
+	pr_smb(PR_DUMP, "Starting vfloat adjustments\n");
 	queue_delayed_work(system_power_efficient_wq,
 		&chip->vfloat_adjust_work, 0);
 }
@@ -4187,7 +4187,7 @@ static void smbchg_vfloat_adjust_work(struct work_struct *work)
 	enable = taper && (chip->parallel.current_max_ma == 0);
 
 	if (!enable) {
-		pr_smb(PR_MISC,
+		pr_smb(PR_DUMP,
 			"Stopping vfloat adj taper=%d parallel_ma = %d\n",
 			taper, chip->parallel.current_max_ma);
 		goto stop;
@@ -4226,7 +4226,7 @@ static void smbchg_vfloat_adjust_work(struct work_struct *work)
 		goto reschedule;
 	}
 
-	pr_smb(PR_STATUS, "sample number = %d vbat_mv = %d ibat_ua = %d\n",
+	pr_smb(PR_DUMP, "sample number = %d vbat_mv = %d ibat_ua = %d\n",
 		chip->n_vbat_samples,
 		vbat_mv,
 		ibat_ua);
@@ -4234,13 +4234,13 @@ static void smbchg_vfloat_adjust_work(struct work_struct *work)
 	chip->max_vbat_sample = max(chip->max_vbat_sample, vbat_mv);
 	chip->n_vbat_samples += 1;
 	if (chip->n_vbat_samples < vf_adjust_n_samples) {
-		pr_smb(PR_STATUS, "Skip %d samples; max = %d\n",
+		pr_smb(PR_DUMP, "Skip %d samples; max = %d\n",
 			chip->n_vbat_samples, chip->max_vbat_sample);
 		goto reschedule;
 	}
 	/* if max vbat > target vfloat, delta_vfloat_mv could be negative */
 	delta_vfloat_mv = chip->vfloat_mv - chip->max_vbat_sample;
-	pr_smb(PR_STATUS, "delta_vfloat_mv = %d, samples = %d, mvbat = %d\n",
+	pr_smb(PR_DUMP, "delta_vfloat_mv = %d, samples = %d, mvbat = %d\n",
 		delta_vfloat_mv, chip->n_vbat_samples, chip->max_vbat_sample);
 	/*
 	 * enough valid samples has been collected, adjust trim codes
@@ -4250,7 +4250,7 @@ static void smbchg_vfloat_adjust_work(struct work_struct *work)
 			|| delta_vfloat_mv < -1 * vf_adjust_low_threshold) {
 		rc = smbchg_adjust_vfloat_mv_trim(chip, delta_vfloat_mv);
 		if (rc) {
-			pr_smb(PR_STATUS,
+			pr_smb(PR_DUMP,
 				"Stopping vfloat adj after trim adj rc = %d\n",
 				 rc);
 			goto stop;

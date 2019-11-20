@@ -1233,6 +1233,8 @@ static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
 		case IFLA_VF_MAC: {
 			struct ifla_vf_mac *ivm;
 			ivm = nla_data(vf);
+			if (ivm->vf >= INT_MAX)
+				return -EINVAL;
 			err = -EOPNOTSUPP;
 			if (ops->ndo_set_vf_mac)
 				err = ops->ndo_set_vf_mac(dev, ivm->vf,
@@ -1242,6 +1244,8 @@ static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
 		case IFLA_VF_VLAN: {
 			struct ifla_vf_vlan *ivv;
 			ivv = nla_data(vf);
+			if (ivv->vf >= INT_MAX)
+				return -EINVAL;
 			err = -EOPNOTSUPP;
 			if (ops->ndo_set_vf_vlan)
 				err = ops->ndo_set_vf_vlan(dev, ivv->vf,
@@ -1252,6 +1256,8 @@ static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
 		case IFLA_VF_TX_RATE: {
 			struct ifla_vf_tx_rate *ivt;
 			ivt = nla_data(vf);
+			if (ivt->vf >= INT_MAX)
+				return -EINVAL;
 			err = -EOPNOTSUPP;
 			if (ops->ndo_set_vf_tx_rate)
 				err = ops->ndo_set_vf_tx_rate(dev, ivt->vf,
@@ -1261,6 +1267,8 @@ static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
 		case IFLA_VF_SPOOFCHK: {
 			struct ifla_vf_spoofchk *ivs;
 			ivs = nla_data(vf);
+			if (ivs->vf >= INT_MAX)
+				return -EINVAL;
 			err = -EOPNOTSUPP;
 			if (ops->ndo_set_vf_spoofchk)
 				err = ops->ndo_set_vf_spoofchk(dev, ivs->vf,

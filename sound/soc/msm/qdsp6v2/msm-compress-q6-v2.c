@@ -2820,7 +2820,8 @@ static int msm_compr_probe(struct snd_soc_platform *platform)
 			kzalloc(sizeof(*pdata), GFP_KERNEL);
 	if (!pdata)
 		return -ENOMEM;
-        mutex_init(&pdata->lock);
+
+	mutex_init(&pdata->lock);
 	snd_soc_platform_set_drvdata(platform, pdata);
 
 	atomic_set(&pdata->audio_ocmem_req, 0);

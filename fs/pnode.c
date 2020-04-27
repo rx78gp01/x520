@@ -249,14 +249,13 @@ static int propagate_one(struct mount *m)
 	child = copy_tree(last_source, last_source->mnt.mnt_root, type);
 	if (IS_ERR(child))
 		return PTR_ERR(child);
+	br_write_lock(&vfsmount_lock);
 	mnt_set_mountpoint(m, mp, child);
+	if (m->mnt_master != dest_master)
+		SET_MNT_MARK(m->mnt_master);
+	br_write_unlock(&vfsmount_lock);
 	last_dest = m;
 	last_source = child;
-	if (m->mnt_master != dest_master) {
-		br_write_lock(&vfsmount_lock);
-		SET_MNT_MARK(m->mnt_master);
-		br_write_unlock(&vfsmount_lock);
-	}
 	list_add_tail(&child->mnt_hash, list);
 	return 0;
 }

@@ -27,9 +27,6 @@
 #include <linux/anon_inodes.h>
 #include <linux/sync.h>
 
-#define CREATE_TRACE_POINTS
-#include "trace/sync.h"
-
 static void sync_fence_signal_pt(struct sync_pt *pt);
 static int _sync_pt_has_signaled(struct sync_pt *pt);
 static void sync_fence_free(struct kref *kref);
@@ -134,8 +131,6 @@ void sync_timeline_signal(struct sync_timeline *obj)
 	unsigned long flags;
 	LIST_HEAD(signaled_pts);
 	struct list_head *pos, *n;
-
-	trace_sync_timeline(obj);
 
 	spin_lock_irqsave(&obj->active_list_lock, flags);
 
@@ -684,10 +679,6 @@ int sync_fence_wait(struct sync_fence *fence, long timeout)
 	int err = 0;
 	struct sync_pt *pt;
 
-	trace_sync_wait(fence, 1);
-	list_for_each_entry(pt, &fence->pt_list_head, pt_list)
-		trace_sync_pt(pt);
-
 	if (timeout > 0) {
 		timeout = msecs_to_jiffies(timeout);
 		err = wait_event_interruptible_timeout(fence->wq,
@@ -697,8 +688,6 @@ int sync_fence_wait(struct sync_fence *fence, long timeout)
 		err = wait_event_interruptible(fence->wq,
 					       sync_fence_check(fence));
 	}
-	trace_sync_wait(fence, 0);
-
 	if (err < 0)
 		return err;
 

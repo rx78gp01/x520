@@ -53,7 +53,11 @@ endif
 KBUILD_CFLAGS	+= $(vdso32)
 KBUILD_CFLAGS	+= -mgeneral-regs-only
 KBUILD_CFLAGS	+= -fno-pic
+ifeq ($(cc-name),clang)
+KBUILD_CFLAGS	+= -mcpu=cortex-a53
+else
 KBUILD_CFLAGS	+= -mcpu=cortex-a72.cortex-a53
+endif
 KBUILD_AFLAGS	+= $(vdso32)
 
 KBUILD_CFLAGS	+= $(call cc-option,-mabi=lp64)

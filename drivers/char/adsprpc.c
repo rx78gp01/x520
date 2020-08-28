@@ -346,13 +346,16 @@ static void fastrpc_mmap_free(struct fastrpc_mmap *map)
 	if (!map)
 		return;
 
-	cid = fl->cid;
-	VERIFY(err, cid >= ADSP_DOMAIN_ID && cid < NUM_CHANNELS);
-	if (err) {
-		err = -ECHRNG;
-		pr_err("adsprpc: ERROR:%s, Invalid channel id: %d, err:%d",
-			__func__, cid, err);
-		return;
+	fl = map->fl;
+	if (fl && !(map->flags == ADSP_MMAP_HEAP_ADDR)) {
+		cid = fl->cid;
+		VERIFY(err, cid >= ADSP_DOMAIN_ID && cid < NUM_CHANNELS);
+		if (err) {
+			err = -ECHRNG;
+			pr_err("adsprpc: ERROR:%s, Invalid channel id: %d, err:%d",
+				__func__, cid, err);
+			return;
+		}
 	}
 	if (map->flags == ADSP_MMAP_HEAP_ADDR) {
 		spin_lock(&me->hlock);
@@ -361,7 +364,6 @@ static void fastrpc_mmap_free(struct fastrpc_mmap *map)
 			hlist_del_init(&map->hn);
 		spin_unlock(&me->hlock);
 	} else {
-		fl = map->fl;
 		spin_lock(&fl->hlock);
 		map->refs--;
 		if (!map->refs)

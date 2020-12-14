@@ -1515,6 +1515,11 @@ static int fastrpc_internal_munmap(struct fastrpc_file *fl,
 	mutex_lock(&fl->map_mutex);
 	if (!fastrpc_mmap_remove(fl, ud->vaddrout, ud->size,
 			&map)) {
+		VERIFY(err, map != NULL);
+		if (err) {
+			err = -EINVAL;
+			goto bail;
+		}
 		VERIFY(err, !fastrpc_munmap_on_dsp(fl, map));
 		if (err)
 			goto bail;

@@ -796,11 +796,11 @@ static int acc_release(struct inode *ip, struct file *fp)
 {
 	printk(KERN_INFO "acc_release\n");
 
-	WARN_ON(!atomic_xchg(&_acc_dev->open_excl, 0));
 	/* indicate that we are disconnected
 	 * still could be online so don't touch online flag
 	 */
 	_acc_dev->disconnected = 1;
+	WARN_ON(!atomic_xchg(&_acc_dev->open_excl, 0));
 	return 0;
 }
 

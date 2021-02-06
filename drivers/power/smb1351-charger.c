@@ -1983,7 +1983,7 @@ static void smb1351_chg_remove_work(struct work_struct *work)
 	} else if (!chip->chg_remove_work_scheduled) {
 		chip->chg_remove_work_scheduled = true;
 		pr_debug("reschedule after 1s\n");
-		schedule_delayed_work(&chip->chg_remove_work,
+		queue_delayed_work(system_power_efficient_wq,&chip->chg_remove_work,
 					msecs_to_jiffies(SECOND_CHECK_DELAY));
 		return;
 	} else {
@@ -2024,7 +2024,7 @@ static int smb1351_usbin_uv_handler(struct smb1351_charger *chip, u8 status)
 
 	if (status) {
 		pr_debug("schedule charger remove worker\n");
-		schedule_delayed_work(&chip->chg_remove_work,
+		queue_delayed_work(system_power_efficient_wq,&chip->chg_remove_work,
 					msecs_to_jiffies(FIRST_CHECK_DELAY));
 		pm_stay_awake(chip->dev);
 	}

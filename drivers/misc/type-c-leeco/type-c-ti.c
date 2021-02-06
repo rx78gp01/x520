@@ -108,7 +108,7 @@ static int typec_set_notifier(struct notifier_block *self,unsigned long action, 
         ti_usb->manu_set_UFP_mode = false;
     }
     ti_usb->manu_set_mode = true;
-    schedule_delayed_work(&ti_usb->tiusb_set_mode_dwork, msecs_to_jiffies(10));
+    queue_delayed_work(system_power_efficient_wq,&ti_usb->tiusb_set_mode_dwork, msecs_to_jiffies(10));
     }
     /*indicate that notifier is ready*/
     if (evdata && evdata->data && action == TYPE_C_INFO_NOTIFY_READY)
@@ -234,7 +234,7 @@ static void tiusb_manu_set_mode_work(struct work_struct *work)
 
     if (ti_usb->irq_set_work){
         dev_err(&ti_usb->client->dev, "irq set work is busy,waiting for its finishing\n");
-        schedule_delayed_work(&ti_usb->tiusb_set_mode_dwork, msecs_to_jiffies(500));
+        queue_delayed_work(system_power_efficient_wq,&ti_usb->tiusb_set_mode_dwork, msecs_to_jiffies(500));
     }
     ti_usb->manu_set_work = true;
 
@@ -342,7 +342,7 @@ static void tiusb_read_regdata_work(struct work_struct *work)
     #ifdef CONFIG_TYPE_C_INFO
     if (ti_usb->manu_set_work){
         dev_err(&ti_usb->client->dev, "manu set work is busy,waiting for its finishing\n");
-        schedule_delayed_work(&ti_usb->tiusb_read_regdata_dwork, msecs_to_jiffies(500));
+        queue_delayed_work(system_power_efficient_wq,&ti_usb->tiusb_read_regdata_dwork, msecs_to_jiffies(500));
     }
     ti_usb->irq_set_work = true;
     #endif
@@ -380,7 +380,7 @@ static void tiusb_read_regdata_work(struct work_struct *work)
     #ifdef CONFIG_TYPE_C_INFO
     ti_usb->irq_set_work = false;
     if(ti_usb->manu_set_DRP_mode || ti_usb->manu_set_DFP_mode || ti_usb->manu_set_UFP_mode)
-        schedule_delayed_work(&ti_usb->tiusb_set_mode_dwork, msecs_to_jiffies(300));
+        queue_delayed_work(system_power_efficient_wq,&ti_usb->tiusb_set_mode_dwork, msecs_to_jiffies(300));
     #endif
     if(ti_usb->info_notif_ready){
         if(TI_ATTACH_TO_UFP == ti_usb->attach_state){
@@ -426,7 +426,7 @@ static irqreturn_t tiusb_irq(int irq, void *data)
 	} else {
 		ti_otg_have_disconnected = false;
 	}
-	schedule_delayed_work(&ti_usb->tiusb_read_regdata_dwork, msecs_to_jiffies(200));
+	queue_delayed_work(system_power_efficient_wq,&ti_usb->tiusb_read_regdata_dwork, msecs_to_jiffies(200));
 	spin_unlock_irqrestore(&ti_usb->irq_enabled_lock, flags);
 
 	return IRQ_HANDLED;

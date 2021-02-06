@@ -113,7 +113,7 @@ static int typec_set_notifier(struct notifier_block *self,unsigned long action, 
 	    ptn5150_usb->manu_set_UFP_mode = false;
 	}
 	ptn5150_usb->manu_set_mode = true;
-	schedule_delayed_work(&ptn5150_usb->nxpusb_set_mode_dwork, msecs_to_jiffies(10));
+	queue_delayed_work(system_power_efficient_wq,&ptn5150_usb->nxpusb_set_mode_dwork, msecs_to_jiffies(10));
     }
     /*indicate that notifier is ready*/
     if (evdata && evdata->data && action == TYPE_C_INFO_NOTIFY_READY)
@@ -147,7 +147,7 @@ static void nxpusb_manu_set_mode_work(struct work_struct *work)
 
     if (ptn5150_usb->irq_set_work){
         dev_err(&ptn5150_usb->client->dev, "irq set work is busy,waiting for its finishing\n");
-        schedule_delayed_work(&ptn5150_usb->nxpusb_set_mode_dwork, msecs_to_jiffies(500));
+        queue_delayed_work(system_power_efficient_wq,&ptn5150_usb->nxpusb_set_mode_dwork, msecs_to_jiffies(500));
     }
     ptn5150_usb->manu_set_work = true;
 
@@ -890,7 +890,7 @@ static irqreturn_t ptn5150_cc_eint_interrupt_handler(int irq, void *data)
 #ifdef CONFIG_TYPE_C_INFO
 	ptn5150_usb->manu_set_mode = false;
 #endif
-	schedule_delayed_work(&ptn5150_usb->eint_work,0);
+	queue_delayed_work(system_power_efficient_wq,&ptn5150_usb->eint_work,0);
 	spin_unlock_irqrestore(&ptn5150_usb->irq_enabled_lock, flags);
 
 	return IRQ_RETVAL(IRQ_HANDLED);
@@ -946,7 +946,7 @@ static void ptn5150_eint_work(struct work_struct *work)
 	struct type_c_event_data notif_data;
 	if (ptn5150_usb->manu_set_work){
 		dev_err(&ptn5150_usb->client->dev, "manu set work is busy,waiting for its finishing\n");
-		schedule_delayed_work(&ptn5150_usb->nxpusb_set_mode_dwork, msecs_to_jiffies(500));
+		queue_delayed_work(system_power_efficient_wq,&ptn5150_usb->nxpusb_set_mode_dwork, msecs_to_jiffies(500));
 	}
 	ptn5150_usb->irq_set_work = true;
 #endif
@@ -974,7 +974,7 @@ static void ptn5150_eint_work(struct work_struct *work)
 		}
 		ptn5150_usb->irq_set_work = false;
 		if(ptn5150_usb->manu_set_DRP_mode || ptn5150_usb->manu_set_DFP_mode || ptn5150_usb->manu_set_UFP_mode)
-		schedule_delayed_work(&ptn5150_usb->nxpusb_set_mode_dwork, msecs_to_jiffies(300));
+		queue_delayed_work(system_power_efficient_wq,&ptn5150_usb->nxpusb_set_mode_dwork, msecs_to_jiffies(300));
 #endif
 		ptn5150_usb->attach_state = attachment_status;
 		t_printk(K_INFO, "ptn5150 0x04 register value = 0x%x, attachment_status=%d, Try_Sink_State=%d\n", Register_Value, attachment_status, Try_Sink_State);
@@ -988,7 +988,7 @@ static void ptn5150_eint_work(struct work_struct *work)
 			if (Try_Sink_State == Try_Sink_Source_To_Sink)
 			{
 			       t_printk(K_INFO, "case 0 try sink\n");
-				schedule_delayed_work(&ptn5150_usb->trysnk_work1, msecs_to_jiffies(100));
+				queue_delayed_work(system_power_efficient_wq,&ptn5150_usb->trysnk_work1, msecs_to_jiffies(100));
 				Try_Sink_State = Try_Sink_Attached_Wait_Src_Detached;
 			}
 			// aftung simplify
@@ -1102,7 +1102,7 @@ static void ptn5150_trysnk_work1(struct work_struct *work)
 		{
 		   //external has device attached and maybe in DRP mode
 			rp_miss_count = 0;
-			schedule_delayed_work(&ptn5150_usb->trysnk_work1, msecs_to_jiffies(10));
+			queue_delayed_work(system_power_efficient_wq,&ptn5150_usb->trysnk_work1, msecs_to_jiffies(10));
 		}
 		else if ((Register_Value == 0x14) || (Register_Value == 0x00))
 		{
@@ -1120,12 +1120,12 @@ static void ptn5150_trysnk_work1(struct work_struct *work)
 				//if no Cable external in 200ms ,excute trysnk_work2;
 				//if UFP detected,an interrupt occures,cancel trysnk_work2
 				t_printk(K_INFO, "%s schedule work2\n", __func__);
-				schedule_delayed_work(&ptn5150_usb->trysnk_work2, msecs_to_jiffies(200));
+				queue_delayed_work(system_power_efficient_wq,&ptn5150_usb->trysnk_work2, msecs_to_jiffies(200));
 			}
 			else
 			{
 				t_printk(K_INFO, "ptn5150 rp_miss_count = %d schedule trysnd work1\n", rp_miss_count);
-				schedule_delayed_work(&ptn5150_usb->trysnk_work1, msecs_to_jiffies(10));
+				queue_delayed_work(system_power_efficient_wq,&ptn5150_usb->trysnk_work1, msecs_to_jiffies(10));
 			}
 		}
 	}
@@ -1333,7 +1333,7 @@ static int ptn5150_usb_probe(struct i2c_client *i2c, const struct i2c_device_id 
 	}
 
 	pr_info("ptn5150 run here!\n");
-	schedule_delayed_work(&ptn5150_usb->eint_work, 3 * HZ);
+	queue_delayed_work(system_power_efficient_wq,&ptn5150_usb->eint_work, 3 * HZ);
 
 	dev_dbg(&i2c->dev, "%s finished, addr:%d\n", __func__, i2c->addr);
 	is_nxp_type_c_register = true;

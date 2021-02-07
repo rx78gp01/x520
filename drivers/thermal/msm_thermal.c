@@ -2825,7 +2825,7 @@ static int __ref update_offline_cores(int val)
 
 	if (pend_hotplug_req && !in_suspend && !retry_in_progress) {
 		retry_in_progress = true;
-		schedule_delayed_work(&retry_hotplug_work,
+		queue_delayed_work(system_power_efficient_wq,&retry_hotplug_work,
 			msecs_to_jiffies(HOTPLUG_RETRY_INTERVAL_MS));
 	}
 
@@ -4248,7 +4248,7 @@ start_sampling:
 	prog_thresh->thresh_list[0].notify(&prog_thresh->thresh_list[0]);
 
 	if (prog->overall_prog_state == MSM_THERM_PROGRESSIVE_SAMPLING)
-		schedule_delayed_work(&prog->prog_work,
+		queue_delayed_work(system_power_efficient_wq,&prog->prog_work,
 			msecs_to_jiffies(prog->polling_delay_ms));
 	mutex_unlock(&prog_thresh->lock);
 }
@@ -4381,7 +4381,7 @@ static void process_progressive_trip(struct threshold_info *thresh_inp,
 
 	sensor_data->prog_trip_clear = true;
 	if (prog->overall_prog_state != MSM_THERM_PROGRESSIVE_SAMPLING)
-		schedule_delayed_work(&prog->prog_work, 0);
+		queue_delayed_work(system_power_efficient_wq,&prog->prog_work, 0);
 
 process_prog_exit:
 	mutex_unlock(&thresh_inp->lock);
@@ -4630,7 +4630,7 @@ static void thermal_monitor_init(void)
 			if (!init_prog_threshold(prog) &&
 				!convert_to_zone_id(&prog->thresh)) {
 				/* Check initial thresholds */
-				schedule_delayed_work(
+				queue_delayed_work(system_power_efficient_wq,
 				&prog->prog_work, 0);
 				therm_set_threshold(&prog->thresh);
 			}
@@ -5395,7 +5395,7 @@ int msm_thermal_init(struct msm_thermal_data *pdata)
 	pm_notifier(msm_thermal_suspend_callback, 0);
 	INIT_DELAYED_WORK(&retry_hotplug_work, retry_hotplug);
 	INIT_DELAYED_WORK(&check_temp_work, check_temp);
-	schedule_delayed_work(&check_temp_work, 0);
+	queue_delayed_work(system_power_efficient_wq,&check_temp_work, 0);
 
 	if (num_possible_cpus() > 1) {
 		cpus_previously_online_update();

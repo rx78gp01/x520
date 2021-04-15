@@ -1,0 +1,45 @@
+From 25320ac50e6ddd8b935282f22dfddb579d528429 Mon Sep 17 00:00:00 2001
+From: syphyr <syphyr@gmail.com>
+Date: Sun, 12 Aug 2018 20:00:19 +0200
+Subject: net: Fix Wireguard compile error
+
+		This function has been backported by the following commits:
+
+		fixes: "ipv6: Add rt6_get_cookie() function"
+		fixes: "ipv6: add rcu grace period before freeing fib6_node"
+
+		net: Fix error with ip_select_ident
+
+		Fixes: "ipv4: hash net ptr into fragmentation bucket selection"
+		Fixes: "ipv4: ip_tunnel: use net namespace from rtable not socket"
+---
+
+diff --git a/net/wireguard/compat/dst_cache/dst_cache.c b/net/wireguard/compat/dst_cache/dst_cache.c
+index 5cc0806..baf455e 100644
+--- a/net/wireguard/compat/dst_cache/dst_cache.c
++++ b/net/wireguard/compat/dst_cache/dst_cache.c
+@@ -16,7 +16,7 @@ 
+ #if IS_ENABLED(CONFIG_IPV6)
+ #include <net/ip6_fib.h>
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0) && LINUX_VERSION_CODE >= KERNEL_VERSION(3, 17, 0)) || LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 50)
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0) && LINUX_VERSION_CODE >= KERNEL_VERSION(3, 17, 0)) || LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 50)
+ static inline u32 rt6_get_cookie(const struct rt6_info *rt)
+ {
+ 	if ((unlikely(rt->dst.flags & DST_NOCACHE) && rt->dst.from))
+ 		rt = (struct rt6_info *)(rt->dst.from);
+diff --git a/net/wireguard/compat/udp_tunnel/udp_tunnel.c b/net/wireguard/compat/udp_tunnel/udp_tunnel.c
+index ae43566..7c85d0e 100644
+--- a/net/wireguard/compat/udp_tunnel/udp_tunnel.c
++++ b/net/wireguard/compat/udp_tunnel/udp_tunnel.c
+@@ -166,7 +166,7 @@ static void __compat_iptunnel_xmit(struct rtable *rt, struct sk_buff *skb,
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 53)
+ 	__ip_select_ident(iph, &rt->dst, (skb_shinfo(skb)->gso_segs ?: 1) - 1);
+ #else
+-	__ip_select_ident(iph, skb_shinfo(skb)->gso_segs ?: 1);
++	__ip_select_ident(dev_net(rt->dst.dev), iph, skb_shinfo(skb)->gso_segs ?: 1);
+ #endif
+ 
+ 	iptunnel_xmit(skb, skb->dev);
+-- 
+cgit v1.2.3-4-ga26e
+

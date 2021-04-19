@@ -369,6 +369,67 @@ out:
 	return err;
 }
 
+/*
+ * Sdcardfs read_iter, redirect modified iocb to lower read_iter
+ */
+ssize_t sdcardfs_read_iter(struct kiocb *iocb, const struct iovec *iov,
+			     unsigned long nr_segs, loff_t pos)
+{
+	int err;
+	struct file *file = iocb->ki_filp, *lower_file;
+
+	lower_file = sdcardfs_lower_file(file);
+	if (!lower_file->f_op->aio_read) {
+		err = -EINVAL;
+		goto out;
+	}
+
+	get_file(lower_file); /* prevent lower_file from being released */
+	iocb->ki_filp = lower_file;
+	err = lower_file->f_op->aio_read(iocb, iov, nr_segs, pos);
+	iocb->ki_filp = file;
+	fput(lower_file);
+	/* update upper inode atime as needed */
+	if (err >= 0 || err == -EIOCBQUEUED)
+		fsstack_copy_attr_atime(file->f_path.dentry->d_inode,
+					lower_file->f_path.dentry->d_inode);
+out:
+	return err;
+}
+
+/*
+ * Sdcardfs write_iter, redirect modified iocb to lower write_iter
+ */
+ssize_t sdcardfs_write_iter(struct kiocb *iocb, const struct iovec *iov,
+			     unsigned long nr_segs, loff_t pos)
+{
+	int err;
+	struct file *file = iocb->ki_filp, *lower_file;
+	struct inode *inode = file->f_path.dentry->d_inode;
+
+	lower_file = sdcardfs_lower_file(file);
+	if (!lower_file->f_op->aio_write) {
+		err = -EINVAL;
+		goto out;
+	}
+
+	get_file(lower_file); /* prevent lower_file from being released */
+	iocb->ki_filp = lower_file;
+	err = lower_file->f_op->aio_write(iocb, iov, nr_segs, pos);
+	iocb->ki_filp = file;
+	fput(lower_file);
+	/* update upper inode times/sizes as needed */
+	if (err >= 0 || err == -EIOCBQUEUED) {
+		if (sizeof(loff_t) > sizeof(long))
+			mutex_lock(&inode->i_mutex);
+		fsstack_copy_inode_size(inode, lower_file->f_path.dentry->d_inode);
+		fsstack_copy_attr_times(inode, lower_file->f_path.dentry->d_inode);
+		if (sizeof(loff_t) > sizeof(long))
+			mutex_unlock(&inode->i_mutex);
+	}
+out:
+	return err;
+}
 
 const struct file_operations sdcardfs_main_fops = {
 	.llseek		= generic_file_llseek,
@@ -384,6 +445,8 @@ const struct file_operations sdcardfs_main_fops = {
 	.release	= sdcardfs_file_release,
 	.fsync		= sdcardfs_fsync,
 	.fasync		= sdcardfs_fasync,
+	.aio_read	= sdcardfs_read_iter,
+	.aio_write	= sdcardfs_write_iter,
 };
 
 /* trimmed directory options */

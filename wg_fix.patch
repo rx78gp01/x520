@@ -31,7 +31,25 @@ diff --git a/net/wireguard/compat/udp_tunnel/udp_tunnel.c b/net/wireguard/compat
 index ae43566..7c85d0e 100644
 --- a/net/wireguard/compat/udp_tunnel/udp_tunnel.c
 +++ b/net/wireguard/compat/udp_tunnel/udp_tunnel.c
-@@ -166,7 +166,7 @@ static void __compat_iptunnel_xmit(struct rtable *rt, struct sk_buff *skb,
+@@ -60,7 +60,7 @@
+ 			goto error;
+ 	}
+ 
+-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0)
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+ 	sock->sk->sk_no_check = !cfg->use_udp_checksums;
+ #else
+ 	sock->sk->sk_no_check_tx = !cfg->use_udp_checksums;
+@@ -89,7 +89,7 @@
+ 	*(void **)&sock->sk->sk_data_ready = (void *)__compat_sk_data_ready;
+ }
+ 
+-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0)
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+ static inline __sum16 udp_v4_check(int len, __be32 saddr,
+ 				   __be32 daddr, __wsum base)
+ {
+@@ -166,7 +166,7 @@
  #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 53)
  	__ip_select_ident(iph, &rt->dst, (skb_shinfo(skb)->gso_segs ?: 1) - 1);
  #else
@@ -40,6 +58,36 @@ index ae43566..7c85d0e 100644
  #endif
  
  	iptunnel_xmit(skb, skb->dev);
+@@ -288,7 +288,7 @@
+ 	if (err < 0)
+ 		goto error;
+ 
+-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0)
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+ 	sock->sk->sk_no_check = !cfg->use_udp_checksums;
+ #else
+ 	udp_set_no_check6_tx(sock->sk, !cfg->use_udp6_tx_checksums);
+@@ -307,7 +307,7 @@
+ 	return err;
+ }
+ 
+-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0)
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+ static inline __sum16 udp_v6_check(int len,
+ 		const struct in6_addr *saddr,
+ 		const struct in6_addr *daddr,
+diff --git a/net/wireguard/compat/compat.h b/net/wireguard/compat/compat.h
+--- a/net/wireguard/compat/compat.h
++++ b/net/wireguard/compat/compat.h
+@@ -787,7 +787,7 @@
+ #define skb_probe_transport_header(a) skb_probe_transport_header(a, 0)
+ #endif
+ 
+-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0) && !defined(ISRHEL7)
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0) && !defined(ISRHEL7)
+ #define ignore_df local_df
+ #endif
+ 
 -- 
 cgit v1.2.3-4-ga26e
 

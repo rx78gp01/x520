@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2015, 2017-2018, 2020 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -51,6 +51,9 @@
 #include "limFT.h"
 #endif
 #include "vos_utils.h"
+#ifdef WLAN_FEATURE_LFR_MBB
+#include "lim_mbb.h"
+#endif
 
 
 /**
@@ -98,6 +101,105 @@ static inline unsigned int isAuthValid(tpAniSirGlobal pMac, tpSirMacAuthFrameBod
     return valid;
 }
 
+#ifdef WLAN_FEATURE_SAE
+/**
+ * lim_external_auth_add_pre_auth_node()- Add preauth node for the peer
+ *                                        performing external authentication
+ * @mac_ctx: MAC context
+ * @mac_hdr: Mac header of the packet
+ * @mlm_state: MLM state to be marked to track SAE authentication
+ *
+ * Return: None
+ */
+static void lim_external_auth_add_pre_auth_node(tpAniSirGlobal mac_ctx,
+                                                tpSirMacMgmtHdr mac_hdr,
+                                                tLimMlmStates mlm_state)
+{
+    struct tLimPreAuthNode *auth_node;
+    tpLimPreAuthTable preauth_table = &mac_ctx->lim.gLimPreAuthTimerTable;
+
+    limLog(mac_ctx, LOG1, FL("=======> eSIR_AUTH_TYPE_SAE"));
+    /* Create entry for this STA in pre-auth list */
+    auth_node = limAcquireFreePreAuthNode(mac_ctx, preauth_table);
+    if (!auth_node) {
+        limLog(mac_ctx, LOG1,
+                "Max pre-auth nodes reached " MAC_ADDRESS_STR,
+                MAC_ADDR_ARRAY(mac_hdr->sa));
+        return;
+    }
+    limLog(mac_ctx, LOG1,
+            "Creating preauth node for SAE peer " MAC_ADDRESS_STR,
+            MAC_ADDR_ARRAY(mac_hdr->sa));
+    vos_mem_copy((uint8_t *)auth_node->peerMacAddr,
+                mac_hdr->sa, sizeof(tSirMacAddr));
+    auth_node->mlmState = mlm_state;
+    auth_node->authType = eSIR_AUTH_TYPE_SAE;
+    auth_node->timestamp = vos_timer_get_system_ticks();
+    auth_node->seqNo = ((mac_hdr->seqControl.seqNumHi << 4) |
+                        (mac_hdr->seqControl.seqNumLo));
+    auth_node->assoc_req.present = false;
+    limAddPreAuthNode(mac_ctx, auth_node);
+}
+
+
+/**
+ * lim_process_sae_auth_frame()-Process SAE authentication frame
+ * @mac_ctx: MAC context
+ * @rx_pkt_info: Rx packet
+ * @pe_session: PE session
+ *
+ * Return: None
+ */
+static void lim_process_sae_auth_frame(tpAniSirGlobal mac_ctx,
+                                       uint8_t *rx_pkt_info,
+                                       tpPESession pe_session)
+{
+    tpSirMacMgmtHdr mac_hdr;
+    enum rxmgmt_flags rx_flags = RXMGMT_FLAG_NONE;
+
+    mac_hdr = WDA_GET_RX_MAC_HEADER(rx_pkt_info);
+
+    limLog(mac_ctx, LOG1, FL("Received SAE Auth frame type %d subtype %d"),
+           mac_hdr->fc.type, mac_hdr->fc.subType);
+
+    if (LIM_IS_STA_ROLE(pe_session) &&
+        pe_session->limMlmState != eLIM_MLM_WT_SAE_AUTH_STATE)
+        limLog(mac_ctx, LOGE,
+               FL("received SAE auth response in unexpected state %x"),
+               pe_session->limMlmState);
+
+    if(LIM_IS_AP_ROLE(pe_session)) {
+            struct tLimPreAuthNode *sta_pre_auth_ctx;
+
+            rx_flags = RXMGMT_FLAG_EXTERNAL_AUTH;
+            /* Add preauth node when the first SAE authentication frame
+             * is received and mark state as authenticating.
+             * It's not good to track SAE authentication frames with
+             * authTransactionSeqNumber as it's subjected to
+             * SAE protocol optimizations.
+             */
+            /* Extract pre-auth context for the STA, if any. */
+            sta_pre_auth_ctx = limSearchPreAuthList(mac_ctx,
+                                                    mac_hdr->sa);
+            if (!sta_pre_auth_ctx ||
+                (sta_pre_auth_ctx->mlmState != eLIM_MLM_WT_SAE_AUTH_STATE &&
+                sta_pre_auth_ctx->mlmState !=
+                eLIM_MLM_AUTHENTICATED_STATE)) {
+                    lim_external_auth_add_pre_auth_node(mac_ctx, mac_hdr,
+                                                    eLIM_MLM_WT_SAE_AUTH_STATE);
+            }
+    }
+
+    limSendSmeMgmtFrameInd(mac_ctx, pe_session->peSessionId,
+                           rx_pkt_info, pe_session,
+                           WDA_GET_RX_RSSI_DB(rx_pkt_info), rx_flags);
+}
+#else
+static void lim_process_sae_auth_frame(tpAniSirGlobal mac_ctx,
+                                       uint8_t *rx_pkt_info,
+                                       tpPESession pe_session)
+{}
+#endif
 
 /**
  * limProcessAuthFrame
@@ -159,6 +261,7 @@ limProcessAuthFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo, tpPESession pse
     tpDphHashNode           pStaDs = NULL;
     tANI_U16                assocId = 0;
     tANI_U16                currSeqNo = 0;
+    tANI_U16                auth_alg = 0;
     /* Added For BT -AMP support */
     // Get pointer to Authentication frame header and body
  
@@ -195,6 +298,9 @@ limProcessAuthFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo, tpPESession pse
                (uint)abs((tANI_S8)WDA_GET_RX_RSSI_DB(pRxPacketInfo)));
 
     pBody = WDA_GET_RX_MPDU_DATA(pRxPacketInfo);
+
+    auth_alg = *(uint16_t *)pBody;
+    limLog(pMac, LOG1, FL("auth_alg %d "), auth_alg);
 
     //PELOG3(sirDumpBuf(pMac, SIR_LIM_MODULE_ID, LOG3, (tANI_U8*)pBd, ((tpHalBufDesc) pBd)->mpduDataOffset + frameLen);)
 
@@ -585,6 +691,11 @@ limProcessAuthFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo, tpPESession pse
 
             goto free;
         } // else if (wlan_cfgGetInt(CFG_PRIVACY_OPTION_IMPLEMENTED))
+    } else if (auth_alg == eSIR_AUTH_TYPE_SAE) {
+         if (LIM_IS_STA_ROLE(psessionEntry) ||
+             LIM_IS_AP_ROLE(psessionEntry))
+                lim_process_sae_auth_frame(pMac, pRxPacketInfo, psessionEntry);
+        goto free;
     } // if (fc.wep)
     else
     {
@@ -673,20 +784,29 @@ limProcessAuthFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo, tpPESession pse
                  * SA-Query procedure determines that the original SA is
                  * invalid.
                  */
-                if (isConnected
+                if (isConnected && pStaDs->PrevAuthSeqno != currSeqNo
 #ifdef WLAN_FEATURE_11W
                     && !pStaDs->rmfEnabled
 #endif
-                                          )
+                   )
                 {
                     limLog(pMac, LOGE,
-                            FL("STA is already connected but received auth frame"
-                                "Send the Deauth and lim Delete Station Context"
-                                "(staId: %d, assocId: %d) "),
+                            FL("Auth frame received in mlm state: %d(staId: %d, assocId: %d)"),
+                            pStaDs->mlmStaContext.mlmState,
                             pStaDs->staIndex, assocId);
-                    limSendDeauthMgmtFrame(pMac, eSIR_MAC_UNSPEC_FAILURE_REASON,
-                            (tANI_U8 *) pHdr->sa, psessionEntry, FALSE);
-                    limTriggerSTAdeletion(pMac, pStaDs, psessionEntry);
+                    if (pStaDs->mlmStaContext.mlmState ==
+                        eLIM_MLM_LINK_ESTABLISHED_STATE) {
+                        limLog(pMac, LOGE,
+                               FL("STA is already connected but received auth frame"
+                                  "Send the Deauth and lim Delete Station Context"
+                                  "(staId: %d, assocId: %d) "),
+                               pStaDs->staIndex, assocId);
+                        limSendDeauthMgmtFrame(pMac,
+                                               eSIR_MAC_UNSPEC_FAILURE_REASON,
+                                               (tANI_U8 *) pHdr->sa,
+                                               psessionEntry, FALSE);
+                        limTriggerSTAdeletion(pMac, pStaDs, psessionEntry);
+                    }
                     goto free;
                 }
             }
@@ -696,7 +816,7 @@ limProcessAuthFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo, tpPESession pse
             if (pAuthNode)
             {
                 /// Pre-auth context exists for the STA
-                if (pHdr->fc.retry == 0 || pAuthNode->seqNo != currSeqNo)
+                if (pAuthNode->seqNo != currSeqNo)
                 {
                     /**
                      * STA is initiating brand-new Authentication
@@ -1150,19 +1270,29 @@ limProcessAuthFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo, tpPESession pse
             if (pRxAuthFrameBody->authAlgoNumber !=
                 pMac->lim.gpLimMlmAuthReq->authType)
             {
-                /**
-                 * Received Authentication frame with an auth
-                 * algorithm other than one requested.
-                 * Wait until Authentication Failure Timeout.
+                /*
+                 * Auth algo is open in rx auth frame when auth type is SAE and
+                 * PMK is cached as driver sent auth algo as open in tx frame
+                 * as well.
                  */
-
-                // Log error
-                PELOGW(limLog(pMac, LOGW,
-                       FL("received Auth frame2 for unexpected auth algo number %d "
-                       MAC_ADDRESS_STR), pRxAuthFrameBody->authAlgoNumber,
-                       MAC_ADDR_ARRAY(pHdr->sa));)
-
-                break;
+                if ((pMac->lim.gpLimMlmAuthReq->authType ==
+                     eSIR_AUTH_TYPE_SAE) && psessionEntry->sae_pmk_cached) {
+                     limLog(pMac, LOGW,
+                            FL("rx Auth frame2 auth algo %d in SAE PMK case"),
+                            pRxAuthFrameBody->authAlgoNumber);
+                } else {
+                    /**
+                     * Received Authentication frame with an auth
+                     * algorithm other than one requested.
+                     * Wait until Authentication Failure Timeout.
+                     */
+                    // Log error
+                    PELOGW(limLog(pMac, LOGW,
+                           FL("received Auth frame2 for unexpected auth algo num %d "
+                           MAC_ADDRESS_STR), pRxAuthFrameBody->authAlgoNumber,
+                           MAC_ADDR_ARRAY(pHdr->sa));)
+                    break;
+                }
             }
 
             if (pRxAuthFrameBody->authStatusCode ==
@@ -1855,6 +1985,16 @@ tSirRetStatus limProcessAuthFrameNoSession(tpAniSirGlobal pMac, tANI_U8 *pBd, vo
     pBody = WDA_GET_RX_MPDU_DATA(pBd);
     frameLen = WDA_GET_RX_PAYLOAD_LEN(pBd);
 
+    /*
+     * since, roaming is not supported in sta + mon scc, ignore
+     * pre-auth when capture on monitor mode is started
+     */
+    if (vos_check_monitor_state())
+    {
+        limLog(pMac, LOG1, FL("Ignore pre-auth frame in monitor mode"));
+        return eSIR_FAILURE;
+    }
+
     limLog(pMac, LOG1, FL("Auth Frame Received: BSSID " MAC_ADDRESS_STR
     " (RSSI %d)"),MAC_ADDR_ARRAY(pHdr->bssId),
     (uint)abs((tANI_S8)WDA_GET_RX_RSSI_DB(pBd)));
@@ -1936,15 +2076,33 @@ tSirRetStatus limProcessAuthFrameNoSession(tpAniSirGlobal pMac, tANI_U8 *pBd, vo
     limLog(pMac, LOG1, FL("Pre-Auth response received from neighbor"));
     limLog(pMac, LOG1, FL("Pre-Auth done state"));
 #endif
+
+    limLog(pMac, LOG1, FL("is_preauth_lfr_mbb %d"),
+                          pMac->ft.ftSmeContext.is_preauth_lfr_mbb);
+
     // Stopping timer now, that we have our unicast from the AP
     // of our choice.
-    limDeactivateAndChangeTimer(pMac, eLIM_FT_PREAUTH_RSP_TIMER);
+    if (!pMac->ft.ftSmeContext.is_preauth_lfr_mbb)
+        limDeactivateAndChangeTimer(pMac, eLIM_FT_PREAUTH_RSP_TIMER);
+
+#ifdef WLAN_FEATURE_LFR_MBB
+    if (pMac->ft.ftSmeContext.is_preauth_lfr_mbb)
+        limDeactivateAndChangeTimer(pMac, eLIM_PREAUTH_MBB_RSP_TIMER);
+#endif
 
 
     // Save off the auth resp.
     if ((sirConvertAuthFrame2Struct(pMac, pBody, frameLen, &rxAuthFrame) != eSIR_SUCCESS))
     {
         limLog(pMac, LOGE, FL("failed to convert Auth frame to struct"));
+
+#ifdef WLAN_FEATURE_LFR_MBB
+        if (pMac->ft.ftSmeContext.is_preauth_lfr_mbb) {
+            lim_handle_pre_auth_mbb_rsp(pMac, eSIR_FAILURE, psessionEntry);
+            return eSIR_FAILURE;
+        }
+#endif
+
         limHandleFTPreAuthRsp(pMac, eSIR_FAILURE, NULL, 0, psessionEntry);
         return eSIR_FAILURE;
     }
@@ -1983,6 +2141,13 @@ tSirRetStatus limProcessAuthFrameNoSession(tpAniSirGlobal pMac, tANI_U8 *pBd, vo
 #endif
             break;
     }
+
+#ifdef WLAN_FEATURE_LFR_MBB
+        if (pMac->ft.ftSmeContext.is_preauth_lfr_mbb) {
+            lim_handle_pre_auth_mbb_rsp(pMac, ret_status, psessionEntry);
+            return ret_status;
+        }
+#endif
 
     // Send the Auth response to SME
     limHandleFTPreAuthRsp(pMac, ret_status, pBody, frameLen, psessionEntry);

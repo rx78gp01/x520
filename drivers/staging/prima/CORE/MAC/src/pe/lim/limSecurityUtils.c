@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2015, 2017, 2020 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -383,11 +383,20 @@ void
 limReleasePreAuthNode(tpAniSirGlobal pMac, tpLimPreAuthNode pAuthNode)
 {
     pAuthNode->fFree = 1;
+    if (pAuthNode->authType == eSIR_AUTH_TYPE_SAE &&
+        pAuthNode->assoc_req.present) {
+            tpSirAssocReq assoc =
+                    (tpSirAssocReq)pAuthNode->assoc_req.assoc_req;
+
+            if (assoc->assocReqFrameLength)
+                vos_mem_free(assoc->assocReqFrame);
+            vos_mem_free(assoc);
+            pAuthNode->assoc_req.present = false;
+    }
     MTRACE(macTrace(pMac, TRACE_CODE_TIMER_DEACTIVATE, NO_SESSION, eLIM_PRE_AUTH_CLEANUP_TIMER));
-    tx_timer_deactivate(&pAuthNode->timer);                
+            tx_timer_deactivate(&pAuthNode->timer);
     pMac->lim.gLimNumPreAuthContexts--;
 } /*** end limReleasePreAuthNode() ***/
-
 
 /**
  * limDeletePreAuthNode
@@ -473,10 +482,6 @@ limDeletePreAuthNode(tpAniSirGlobal pMac, tSirMacAddr macAddr)
 
 } /*** end limDeletePreAuthNode() ***/
 
-
-
-
-
 /**
  * limRestoreFromPreAuthState
  *
@@ -515,13 +520,6 @@ limRestoreFromAuthState(tpAniSirGlobal pMac, tSirResultCodes resultCode, tANI_U1
     
     /* Update PE session ID*/
     mlmAuthCnf.sessionId = sessionEntry->peSessionId;
-
-    /// Free up buffer allocated
-    /// for pMac->lim.gLimMlmAuthReq
-    vos_mem_free(pMac->lim.gpLimMlmAuthReq);
-    pMac->lim.gpLimMlmAuthReq = NULL;
-
-    sessionEntry->limMlmState = sessionEntry->limPrevMlmState;
     
     MTRACE(macTrace(pMac, TRACE_CODE_MLM_STATE, sessionEntry->peSessionId, sessionEntry->limMlmState));
     /* Set the authAckStatus status flag as sucess as
@@ -529,10 +527,14 @@ limRestoreFromAuthState(tpAniSirGlobal pMac, tSirResultCodes resultCode, tANI_U1
      * retry is needed also cancel the auth rety timer
      */
     pMac->authAckStatus = LIM_AUTH_ACK_RCD_SUCCESS;
-    // 'Change' timer for future activations
-    limDeactivateAndChangeTimer(pMac, eLIM_AUTH_RETRY_TIMER);
-    // 'Change' timer for future activations
-    limDeactivateAndChangeTimer(pMac, eLIM_AUTH_FAIL_TIMER);
+    /* Auth retry and AUth failure timers are not started for SAE
+     * Change' timer for future activations
+     */
+    if (tx_timer_running(&pMac->lim.limTimers.gLimPeriodicAuthRetryTimer))
+        limDeactivateAndChangeTimer(pMac, eLIM_AUTH_RETRY_TIMER);
+    /* Change' timer for future activations */
+    if (tx_timer_running(&pMac->lim.limTimers.gLimAuthFailureTimer))
+        limDeactivateAndChangeTimer(pMac, eLIM_AUTH_FAIL_TIMER);
 
     #if 0
     if (wlan_cfgGetStr(pMac, WNI_CFG_BSSID, currentBssId, &cfg) != eSIR_SUCCESS)
@@ -548,9 +550,25 @@ limRestoreFromAuthState(tpAniSirGlobal pMac, tSirResultCodes resultCode, tANI_U1
         pMac->lim.gLimPreAuthChannelNumber = 0;
     }
 
-    limPostSmeMessage(pMac,
+    if ((protStatusCode == eSIR_MAC_MAX_ASSOC_STA_REACHED_STATUS)
+             && (sessionEntry->sta_auth_retries_for_code17 <
+                            pMac->sta_auth_retries_for_code17)) {
+        limLog(pMac, LOG1, FL("Retry Auth "));
+        limDoSendAuthMgmtFrame(pMac, sessionEntry);
+        sessionEntry->sta_auth_retries_for_code17++;
+    } else {
+        /// Free up buffer allocated
+        /// for pMac->lim.gLimMlmAuthReq
+        vos_mem_free(pMac->lim.gpLimMlmAuthReq);
+        pMac->lim.gpLimMlmAuthReq = NULL;
+
+        sessionEntry->limMlmState = sessionEntry->limPrevMlmState;
+
+        limPostSmeMessage(pMac,
                       LIM_MLM_AUTH_CNF,
                       (tANI_U32 *) &mlmAuthCnf);
+        sessionEntry->sta_auth_retries_for_code17 = 0;
+    }
 } /*** end limRestoreFromAuthState() ***/
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2016 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2017, 2019-2020 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -144,10 +144,24 @@ typedef enum {
 #ifdef WLAN_FEATURE_ROAM_SCAN_OFFLOAD
    PER_BASED_ROAMING = 63,
 #endif
+   SAP_MODE_WOW = 64,
+   /* SAP_OFFLOADS flag will be used for
+    * SAP auth offload, SAP DHCP offload and
+    * SAP DNS offload.
+    */
+   SAP_OFFLOADS = 65,
+   SAP_BUFF_ALLOC = 66,
+#ifdef WLAN_FEATURE_LFR_MBB
+   MAKE_BEFORE_BREAK = 67,
+#endif
    NUD_DEBUG = 68,
    FATAL_EVENT_LOGGING = 69,
    /*70 reserved for WIFI_DUAL_BAND_ENABLE */
    PROBE_RSP_TEMPLATE_VER1 = 71,
+   STA_MONITOR_SCC = 72,
+#ifdef FEATURE_WLAN_LFR
+   BSSID_BLACKLIST = 73,
+#endif
    //MAX_FEATURE_SUPPORTED = 128
 } placeHolderInCapBitmap;
 
@@ -171,6 +185,11 @@ typedef enum eSriLinkState {
     eSIR_LINK_FINISH_CAL_STATE  = 13,
     eSIR_LINK_LISTEN_STATE      = 14,
     eSIR_LINK_SEND_ACTION_STATE = 15,
+
+#ifdef WLAN_FEATURE_LFR_MBB
+    eSIR_LINK_PRE_AUTH_REASSOC_STATE = 17,
+#endif
+
 } tSirLinkState;
 
 
@@ -249,6 +268,32 @@ typedef struct sSirMbMsgP2p
      */
     tANI_U32 data[1];
 } tSirMbMsgP2p, *tpSirMbMsgP2p;
+
+/**
+ * struct sir_mgmt_msg - Structure used to send auth frame from CSR to LIM
+ * @type: Message type
+ * @msg_len: Message length
+ * @session_id: session id
+ * @data: Pointer to data tobe transmitted
+ */
+struct sir_mgmt_msg {
+    uint16_t type;
+    uint16_t msg_len;
+    uint8_t session_id;
+    uint8_t *data;
+};
+
+#ifdef FEATURE_WLAN_SW_PTA
+/**
+ * struct sir_teardown_link - Struct used to tear down link with AP
+ * @type: Message type
+ * @session_id: session id
+ */
+struct sir_teardown_link {
+    uint16_t type;
+    uint8_t session_id;
+};
+#endif
 
 /// Message queue definitions
 //  msgtype(2bytes) reserved(2bytes) bodyptr(4bytes) bodyval(4bytes)
@@ -684,8 +729,6 @@ typedef struct sSirMbMsgP2p
 
 #define SIR_HAL_SET_MAX_TX_POWER_PER_BAND_REQ \
         (SIR_HAL_ITC_MSG_TYPES_BEGIN + 229)
-#define SIR_HAL_SET_MAX_TX_POWER_PER_BAND_RSP \
-        (SIR_HAL_ITC_MSG_TYPES_BEGIN + 230)
 
 #define SIR_HAL_BCN_MISS_RATE_REQ         (SIR_HAL_ITC_MSG_TYPES_BEGIN + 231)
 
@@ -769,12 +812,42 @@ typedef struct sSirMbMsgP2p
 #define SIR_HAL_PER_ROAM_SCAN_TRIGGER_RSP  (SIR_HAL_ITC_MSG_TYPES_BEGIN + 289)
 #endif
 #define SIR_HAL_UPDATE_CFG_INT_PARAM       (SIR_HAL_ITC_MSG_TYPES_BEGIN + 290)
-/* ARP Debug stats */
-#define SIR_HAL_SET_ARP_STATS_REQ          (SIR_HAL_ITC_MSG_TYPES_BEGIN + 301)
-#define SIR_HAL_GET_ARP_STATS_REQ          (SIR_HAL_ITC_MSG_TYPES_BEGIN + 302)
 
-#define SIR_HAL_TRIGGER_ADD_BA_REQ         (SIR_HAL_ITC_MSG_TYPES_BEGIN + 303)
-#define SIR_HAL_GET_CON_STATUS             (SIR_HAL_ITC_MSG_TYPES_BEGIN + 304)
+#ifdef SAP_AUTH_OFFLOAD
+#define SIR_HAL_SET_SAP_AUTH_OFL           (SIR_HAL_ITC_MSG_TYPES_BEGIN + 291)
+#define SIR_HAL_SAP_OFL_ADD_STA            (SIR_HAL_ITC_MSG_TYPES_BEGIN + 292)
+#define SIR_HAL_SAP_OFL_DEL_STA            (SIR_HAL_ITC_MSG_TYPES_BEGIN + 293)
+#endif
+#ifdef DHCP_SERVER_OFFLOAD
+#define SIR_HAL_SET_DHCP_SERVER_OFFLOAD_REQ (SIR_HAL_ITC_MSG_TYPES_BEGIN + 294)
+#endif /* DHCP_SERVER_OFFLOAD */
+#ifdef MDNS_OFFLOAD
+#define SIR_HAL_SET_MDNS_OFFLOAD           (SIR_HAL_ITC_MSG_TYPES_BEGIN + 295)
+#define SIR_HAL_SET_MDNS_FQDN              (SIR_HAL_ITC_MSG_TYPES_BEGIN + 296)
+#define SIR_HAL_SET_MDNS_RESPONSE          (SIR_HAL_ITC_MSG_TYPES_BEGIN + 297)
+#define SIR_HAL_GET_MDNS_STATUS            (SIR_HAL_ITC_MSG_TYPES_BEGIN + 298)
+#endif /* MDNS_OFFLOAD */
+#ifdef WLAN_FEATURE_APFIND
+#define SIR_HAL_APFIND_SET_CMD             (SIR_HAL_ITC_MSG_TYPES_BEGIN + 299)
+#define SIR_HAL_AP_FIND_IND                (SIR_HAL_ITC_MSG_TYPES_BEGIN + 300)
+#endif/* WLAN_FEATURE_APFIND */
+
+#define SIR_HAL_CAP_TSF_REQ                (SIR_HAL_ITC_MSG_TYPES_BEGIN + 301)
+#define SIR_HAL_GET_TSF_REQ                (SIR_HAL_ITC_MSG_TYPES_BEGIN + 302)
+
+/* ARP Debug stats */
+#define SIR_HAL_SET_ARP_STATS_REQ          (SIR_HAL_ITC_MSG_TYPES_BEGIN + 303)
+#define SIR_HAL_GET_ARP_STATS_REQ          (SIR_HAL_ITC_MSG_TYPES_BEGIN + 304)
+#define SIR_HAL_LOW_POWER_MODE             (SIR_HAL_ITC_MSG_TYPES_BEGIN + 305)
+#define SIR_HAL_VOWIFI_MODE                (SIR_HAL_ITC_MSG_TYPES_BEGIN + 306)
+#define SIR_HAL_QPOWER                     (SIR_HAL_ITC_MSG_TYPES_BEGIN + 307)
+
+#define SIR_HAL_BLACKLIST_REQ              (SIR_HAL_ITC_MSG_TYPES_BEGIN + 308)
+
+#ifdef FEATURE_WLAN_SW_PTA
+#define SIR_HAL_SW_PTA_REQ                (SIR_HAL_ITC_MSG_TYPES_BEGIN + 309)
+#endif
+
 #define SIR_HAL_MSG_TYPES_END              (SIR_HAL_MSG_TYPES_BEGIN + 0x1FF)
 
 // CFG message types
@@ -870,8 +943,15 @@ typedef struct sSirMbMsgP2p
 #define SIR_LIM_DEAUTH_ACK_TIMEOUT       (SIR_LIM_TIMEOUT_MSG_START + 0x27)
 #define SIR_LIM_PERIODIC_JOIN_PROBE_REQ_TIMEOUT (SIR_LIM_TIMEOUT_MSG_START + 0x28)
 
+#ifdef WLAN_FEATURE_LFR_MBB
+#define SIR_LIM_PREAUTH_MBB_RSP_TIMEOUT   (SIR_LIM_TIMEOUT_MSG_START + 0x29)
+#define SIR_LIM_REASSOC_MBB_RSP_TIMEOUT   (SIR_LIM_TIMEOUT_MSG_START + 0x2A)
+#endif
+
+#define SIR_LIM_AUTH_SAE_TIMEOUT            (SIR_LIM_TIMEOUT_MSG_START + 0x2B)
 #define SIR_LIM_CONVERT_ACTIVE_CHANNEL_TO_PASSIVE (SIR_LIM_TIMEOUT_MSG_START + 0x2C)
 #define SIR_LIM_AUTH_RETRY_TIMEOUT            (SIR_LIM_TIMEOUT_MSG_START + 0x2D)
+#define SIR_LIM_SAP_ECSA_TIMEOUT            (SIR_LIM_TIMEOUT_MSG_START + 0x2E)
 
 #define SIR_LIM_MSG_TYPES_END            (SIR_LIM_MSG_TYPES_BEGIN+0xFF)
 

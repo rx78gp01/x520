@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2014, 2016-2017, 2019 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -236,6 +236,20 @@ tpPESession peFindSessionByBssid(tpAniSirGlobal pMac,  tANI_U8*  bssid,    tANI_
 
 }
 
+tANI_S8 limGetInfraSessionId(tpAniSirGlobal pMac)
+{
+    tANI_U8 i;
+    for (i = 0; i < pMac->lim.maxBssId; i++)
+    {
+        if ((pMac->lim.gpSession[i].valid) &&
+           (pMac->lim.gpSession[i].limSystemRole == eLIM_STA_ROLE))
+        {
+            return i;
+        }
+    }
+    limLog(pMac, LOG4, FL("Session lookup fails for infra mode"));
+    return -1;
+}
 
 /*--------------------------------------------------------------------------
   \brief peFindSessionByBssIdx() - looks up the PE session given the bssIdx.
@@ -260,6 +274,22 @@ tpPESession peFindSessionByBssIdx(tpAniSirGlobal pMac,  tANI_U8 bssIdx)
     }
     limLog(pMac, LOG4, FL("Session lookup fails for bssIdx: %d"), bssIdx);
     return NULL;
+}
+
+tpPESession pe_find_session_by_sme_session_id(tpAniSirGlobal mac_ctx,
+                                              tANI_U8 sme_session_id)
+{
+   uint8_t i;
+
+   for (i = 0; i < mac_ctx->lim.maxBssId; i++) {
+       if ((mac_ctx->lim.gpSession[i].valid) &&
+           (mac_ctx->lim.gpSession[i].smeSessionId == sme_session_id))
+           return &mac_ctx->lim.gpSession[i];
+   }
+   limLog(mac_ctx, LOG4, FL("Session lookup fails for smeSessionID: %d"),
+          sme_session_id);
+
+   return NULL;
 }
 
 /*--------------------------------------------------------------------------
@@ -352,6 +382,11 @@ void peDeleteSession(tpAniSirGlobal pMac, tpPESession psessionEntry)
            " BSSID: " MAC_ADDRESS_STR), psessionEntry->peSessionId,
            psessionEntry->operMode, psessionEntry->bssIdx,
            MAC_ADDR_ARRAY(psessionEntry->bssId));
+
+    if (psessionEntry->gLimSpecMgmt.dfs_channel_csa) {
+        limFrameTransmissionControl(pMac, eLIM_TX_ALL, eLIM_RESUME_TX);
+       psessionEntry->gLimSpecMgmt.dfs_channel_csa = false;
+    }
 
     for (n = 0; n < pMac->lim.maxStation; n++)
     {

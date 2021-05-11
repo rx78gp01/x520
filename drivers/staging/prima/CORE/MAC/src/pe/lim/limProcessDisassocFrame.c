@@ -49,6 +49,9 @@
 #include "limSerDesUtils.h"
 #include "limSendMessages.h"
 #include "schApi.h"
+#ifdef WLAN_FEATURE_LFR_MBB
+#include "lim_mbb.h"
+#endif
 
 
 /**
@@ -88,7 +91,6 @@ limProcessDisassocFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo, tpPESession
         return;
     }
 
-
     if (limIsGroupAddr(pHdr->sa))
     {
         // Received Disassoc frame from a BC/MC address
@@ -108,6 +110,16 @@ limProcessDisassocFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo, tpPESession
 
         return;
     }
+
+    if (LIM_IS_STA_ROLE(psessionEntry) &&
+       ((eLIM_SME_WT_DISASSOC_STATE == psessionEntry->limSmeState) ||
+        (eLIM_SME_WT_DEAUTH_STATE == psessionEntry->limSmeState))) {
+            PELOGE(limLog(pMac, LOG1,
+                   FL("recevied disaasoc frame in %d limsmestate... droping this"),
+                       psessionEntry->limSmeState);)
+            return;
+    }
+
 
 #ifdef WLAN_FEATURE_11W
     /* PMF: If this session is a PMF session, then ensure that this frame was protected */
@@ -163,6 +175,13 @@ limProcessDisassocFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo, tpPESession
         return;
     }
 
+#ifdef WLAN_FEATURE_LFR_MBB
+    if (lim_is_mbb_reassoc_in_progress(pMac, psessionEntry)) {
+        limLog(pMac, LOGE, FL("Ignore Disassoc frame as LFR MBB in progress"));
+        return;
+    }
+#endif
+
     /** If we are in the Wait for ReAssoc Rsp state */
     if (limIsReassocInProgress(pMac,psessionEntry)) {
         /** If we had received the DisAssoc from,
@@ -186,6 +205,14 @@ limProcessDisassocFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo, tpPESession
             return;
         }
     }
+
+    if ((psessionEntry->limSystemRole == eLIM_STA_ROLE) &&
+         psessionEntry->limMlmState == eLIM_MLM_WT_ADD_STA_RSP_STATE) {
+        PELOGE(limLog(pMac, LOGE, FL("received Disassoc from the AP in"
+                      "add sta response state, disconnecting"));)
+        psessionEntry->fDeauthReceived = true;
+        return;
+      }
 
     if ( (psessionEntry->limSystemRole == eLIM_AP_ROLE) ||
          (psessionEntry->limSystemRole == eLIM_BT_AMP_AP_ROLE) )

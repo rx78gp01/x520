@@ -933,6 +933,9 @@ static eHalStatus hdd_wmm_sme_callback (tHalHandle hHal,
          hdd_wmm_notify_app(pQosContext);
       }
 
+#ifdef FEATURE_WLAN_ESE
+      hdd_wmm_disable_inactivity_timer(pQosContext);
+#endif
       /* Setting up QoS Failed, QoS context can be released.
        * SME is releasing this flow information and if HDD doen't release this context,
        * next time if application uses the same handle to set-up QoS, HDD (as it has
@@ -1170,6 +1173,9 @@ static eHalStatus hdd_wmm_sme_callback (tHalHandle hHal,
          hdd_wmm_notify_app(pQosContext);
       }
 
+#ifdef FEATURE_WLAN_ESE
+      hdd_wmm_disable_inactivity_timer(pQosContext);
+#endif
       // we are done with this flow
       hdd_wmm_free_context(pQosContext);
       break;
@@ -1221,6 +1227,9 @@ static eHalStatus hdd_wmm_sme_callback (tHalHandle hHal,
          hdd_wmm_notify_app(pQosContext);
       }
 
+#ifdef FEATURE_WLAN_ESE
+      hdd_wmm_disable_inactivity_timer(pQosContext);
+#endif
       // we are done with this flow
       hdd_wmm_free_context(pQosContext);
       break;
@@ -1901,12 +1910,12 @@ void hdd_log_ip_addr(struct sk_buff *skb)
       pIpHdr = (struct iphdr *)&pPkt[sizeof(pHdr->eth_II)];
 
       buf = (char *)&pIpHdr->saddr;
-      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_DEBUG,
+      VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
                "%s: src addr %d:%d:%d:%d", __func__,
                buf[0], buf[1], buf[2], buf[3]);
 
       buf = (char *)&pIpHdr->daddr;
-      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_DEBUG,
+      VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
                "%s: dst addr %d:%d:%d:%d", __func__,
                buf[0], buf[1], buf[2], buf[3]);
    }
@@ -1915,11 +1924,11 @@ void hdd_log_ip_addr(struct sk_buff *skb)
       pIpHdr = (struct iphdr *)&pPkt[sizeof(pHdr->eth_8023)];
 
       buf = (char *)&pIpHdr->saddr;
-      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_DEBUG,
+      VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
                "%s: src addr "IPv6_ADDR_STR, __func__, IPv6_ADDR_ARRAY(buf));
 
       buf = (char *)&pIpHdr->daddr;
-      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_DEBUG,
+      VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
                "%s: dst addr "IPv6_ADDR_STR, __func__, IPv6_ADDR_ARRAY(buf));
    }
    else if ((ntohs(pHdr->eth_II.h_proto) < WLAN_MIN_PROTO) &&
@@ -1932,12 +1941,12 @@ void hdd_log_ip_addr(struct sk_buff *skb)
          pIpHdr = (struct iphdr *)&pPkt[sizeof(pHdr->eth_8023)];
 
          buf = (char *)&pIpHdr->saddr;
-         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_DEBUG,
+         VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
                   "%s: src addr %d:%d:%d:%d", __func__,
                   buf[0], buf[1], buf[2], buf[3]);
 
          buf = (char *)&pIpHdr->daddr;
-         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_DEBUG,
+         VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
                   "%s: dst addr %d:%d:%d:%d", __func__,
                   buf[0], buf[1], buf[2], buf[3]);
       }
@@ -1946,11 +1955,11 @@ void hdd_log_ip_addr(struct sk_buff *skb)
          pIpHdr = (struct iphdr *)&pPkt[sizeof(pHdr->eth_8023)];
 
          buf = (char *)&pIpHdr->saddr;
-         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_DEBUG,
+         VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
                "%s: src addr "IPv6_ADDR_STR, __func__, IPv6_ADDR_ARRAY(buf));
 
          buf = (char *)&pIpHdr->daddr;
-         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_DEBUG,
+         VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
                 "%s: dst addr "IPv6_ADDR_STR, __func__, IPv6_ADDR_ARRAY(buf));
       }
    }
@@ -2182,7 +2191,7 @@ v_VOID_t hdd_wmm_classify_pkt ( hdd_adapter_t* pAdapter,
 }
 
 /**============================================================================
-  @brief hdd_hostapd_select_quueue() - Function which will classify the packet
+  @brief __hdd_hostapd_select_queue() - Function which will classify the packet
          according to linux qdisc expectation.
 
 
@@ -2191,14 +2200,8 @@ v_VOID_t hdd_wmm_classify_pkt ( hdd_adapter_t* pAdapter,
 
   @return         : Qdisc queue index
   ===========================================================================*/
-v_U16_t hdd_hostapd_select_queue(struct net_device * dev, struct sk_buff *skb
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,13,0))
-                                 , void *accel_priv
-#endif
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
-                                 , select_queue_fallback_t fallbac
-#endif
-)
+uint16_t __hdd_hostapd_select_queue(struct net_device *dev,
+				    struct sk_buff *skb)
 {
    WLANTL_ACEnumType ac;
    sme_QosWmmUpType up = SME_QOS_WMM_UP_BE;
@@ -2273,6 +2276,34 @@ done:
 
    return queueIndex;
 }
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0))
+uint16_t hdd_hostapd_select_queue(struct net_device *dev, struct sk_buff *skb,
+				  struct net_device *sb_dev,
+				  select_queue_fallback_t fallbac)
+{
+	return __hdd_hostapd_select_queue(dev, skb);
+}
+
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0))
+uint16_t hdd_hostapd_select_queue(struct net_device *dev, struct sk_buff *skb,
+				  void *accel_priv,
+				  select_queue_fallback_t fallbac)
+{
+	return __hdd_hostapd_select_queue(dev, skb);
+}
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0))
+uint16_t hdd_hostapd_select_queue(struct net_device *dev, struct sk_buff *skb,
+				  void *accel_priv)
+{
+	return __hdd_hostapd_select_queue(dev, skb);
+}
+#else
+uint16_t hdd_hostapd_select_queue(struct net_device *dev, struct sk_buff *skb)
+{
+	return __hdd_hostapd_select_queue(dev, skb);
+}
+#endif
 
 /**============================================================================
   @brief hdd_wmm_select_quueue() - Function which will classify the packet

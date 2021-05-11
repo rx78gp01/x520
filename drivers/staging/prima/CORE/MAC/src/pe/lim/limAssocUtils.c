@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2017, 2020 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -445,7 +445,7 @@ limCheckRxRSNIeMatch(tpAniSirGlobal pMac, tDot11fIERSN rxRSNIe,tpPESession pSess
                      tANI_U8 staIsHT, tANI_BOOLEAN *pmfConnection)
 {
     tDot11fIERSN    *pRSNIe;
-    tANI_U8         i, j, match, onlyNonHtCipher = 1;
+    tANI_U8         i, j, match = 0, onlyNonHtCipher = 1;
 #ifdef WLAN_FEATURE_11W
     tANI_BOOLEAN weArePMFCapable;
     tANI_BOOLEAN weRequirePMF;
@@ -456,6 +456,26 @@ limCheckRxRSNIeMatch(tpAniSirGlobal pMac, tDot11fIERSN rxRSNIe,tpPESession pSess
 
     //RSN IE should be received from PE
     pRSNIe = &pSessionEntry->gStartBssRSNIe;
+
+    /* We should have only one AKM in assoc/reassoc request */
+    if (rxRSNIe.akm_suite_cnt != 1) {
+        limLog(pMac, LOG3, FL("Invalid RX akm_suite_cnt %d"),
+                rxRSNIe.akm_suite_cnt);
+        return eSIR_MAC_INVALID_AKMP_STATUS;
+    }
+    /* Check if we support the received AKM */
+    for (i = 0; i < pRSNIe->akm_suite_cnt; i++) {
+        if (vos_mem_compare(&rxRSNIe.akm_suite[0],
+                            &pRSNIe->akm_suite[i],
+                            sizeof(pRSNIe->akm_suite[i]))) {
+            match = 1;
+            break;
+        }
+    }
+    if (!match) {
+        limLog(pMac, LOG3, FL("Invalid RX akm_suite"));
+        return eSIR_MAC_INVALID_AKMP_STATUS;
+    }
 
     // Check groupwise cipher suite
     for (i = 0; i < sizeof(rxRSNIe.gp_cipher_suite); i++)
@@ -571,10 +591,30 @@ tANI_U8
 limCheckRxWPAIeMatch(tpAniSirGlobal pMac, tDot11fIEWPA rxWPAIe,tpPESession pSessionEntry, tANI_U8 staIsHT)
 {
     tDot11fIEWPA    *pWPAIe;
-    tANI_U8         i, j, match, onlyNonHtCipher = 1;
+    tANI_U8         i, j, match = 0, onlyNonHtCipher = 1;
 
     // WPA IE should be received from PE
     pWPAIe = &pSessionEntry->gStartBssWPAIe;
+
+    /* We should have only one AKM in assoc/reassoc request */
+    if (rxWPAIe.auth_suite_count != 1) {
+        limLog(pMac, LOG1, FL("Invalid RX auth_suite_count %d"),
+                rxWPAIe.auth_suite_count);
+        return eSIR_MAC_INVALID_AKMP_STATUS;
+    }
+    /* Check if we support the received AKM */
+    for (i = 0; i < pWPAIe->auth_suite_count; i++) {
+        if (vos_mem_compare(&rxWPAIe.auth_suites[0],
+                            &pWPAIe->auth_suites[i],
+                            sizeof(pWPAIe->auth_suites[i]))) {
+            match = 1;
+            break;
+        }
+    }
+    if (!match) {
+        limLog(pMac, LOG1, FL("Invalid RX auth_suites"));
+        return eSIR_MAC_INVALID_AKMP_STATUS;
+    }
 
     // Check groupwise cipher suite
     for (i = 0; i < 4; i++)
@@ -1011,6 +1051,8 @@ limRejectAssociation(tpAniSirGlobal pMac, tSirMacAddr peerAddr, tANI_U8 subType,
                      tANI_U16 staId, tANI_U8 deleteSta, tSirResultCodes rCode, tpPESession psessionEntry )
 {
     tpDphHashNode       pStaDs;
+    assoc_rsp_tx_context *tx_complete_context = NULL;
+    vos_list_node_t *pNode= NULL;
 
     limLog(pMac, LOG1, FL("Sessionid: %d authType: %d subType: %d "
            "addPreAuthContext: %d staId: %d deleteSta: %d rCode : %d "
@@ -1049,23 +1091,38 @@ limRejectAssociation(tpAniSirGlobal pMac, tSirMacAddr peerAddr, tANI_U8 subType,
 
             return;
         }
+       vos_list_peek_front(&pMac->assoc_rsp_completion_list, &pNode);
+
+       tx_complete_context = vos_mem_malloc(sizeof(*tx_complete_context));
+       if (!tx_complete_context)
+       {
+            limLog(pMac, LOGW,
+                   FL("Failed to allocate memory"));
+
+            return;
+       }
+       tx_complete_context->psessionID = psessionEntry->peSessionId;
+       tx_complete_context->staId = staId;
+
+       if (pNode)
+            vos_list_insert_back(&pMac->assoc_rsp_completion_list,
+                              &tx_complete_context->node);
+       else
+            vos_list_insert_front(&pMac->assoc_rsp_completion_list,
+                              &tx_complete_context->node);
 
         /**
          * Polaris has state for this STA.
          * Trigger cleanup.
          */
         pStaDs->mlmStaContext.cleanupTrigger = eLIM_REASSOC_REJECT;
-
-        // Receive path cleanup
-        limCleanupRxPath(pMac, pStaDs, psessionEntry);
-   
         // Send Re/Association Response with
         // status code to requesting STA.
         limSendAssocRspMgmtFrame(pMac,
                                  rCode,
                                  0,
                                  peerAddr,
-                                 subType, 0,psessionEntry);
+                                 subType, 0,psessionEntry, tx_complete_context);
 
         if ( psessionEntry->parsedAssocReq[pStaDs->assocId] != NULL)
         {
@@ -1078,6 +1135,13 @@ limRejectAssociation(tpAniSirGlobal pMac, tSirMacAddr peerAddr, tANI_U8 subType,
             vos_mem_free(psessionEntry->parsedAssocReq[pStaDs->assocId]);
             psessionEntry->parsedAssocReq[pStaDs->assocId] = NULL;
         }
+
+        if (pStaDs->mlmStaContext.mlmState == eLIM_MLM_WT_ADD_STA_RSP_STATE) {
+            /* Delete hash entry on add sta failure */
+            limReleasePeerIdx(pMac, pStaDs->assocId, psessionEntry);
+            limDeleteDphHashEntry(pMac, pStaDs->staAddr,
+                                  pStaDs->assocId,psessionEntry);
+        }
     }
     else
     {
@@ -1085,7 +1149,7 @@ limRejectAssociation(tpAniSirGlobal pMac, tSirMacAddr peerAddr, tANI_U8 subType,
                                  eSIR_MAC_MAX_ASSOC_STA_REACHED_STATUS,
                                  1,
                                  peerAddr,
-                                 subType, 0,psessionEntry);
+                                 subType, 0,psessionEntry, NULL);
         // Log error
         limLog(pMac, LOGW,
            FL("received Re/Assoc req when max associated STAs reached from "));
@@ -2421,7 +2485,15 @@ limAddSta(
     }
     else
 #endif
-        pAddStaParams->staIdx = HAL_STA_INVALID_IDX;
+#ifdef SAP_AUTH_OFFLOAD
+        if (!pMac->sap_auth_offload)
+            pAddStaParams->staIdx = HAL_STA_INVALID_IDX;
+        else
+            pAddStaParams->staIdx = pStaDs->staIndex;
+#else
+            pAddStaParams->staIdx = HAL_STA_INVALID_IDX;
+#endif
+
     pAddStaParams->staType = pStaDs->staType;
 
     pAddStaParams->updateSta = updateEntry;
@@ -2593,11 +2665,30 @@ limAddSta(
     "p2pCapableSta: %d"), pAddStaParams->htLdpcCapable,
     pAddStaParams->vhtLdpcCapable, pAddStaParams->p2pCapableSta);
 
+#ifdef SAP_AUTH_OFFLOAD
+    if (pMac->sap_auth_offload) {
+        pAddStaParams->dpuIndex =  pStaDs->dpuIndex;
+        pAddStaParams->bcastDpuIndex = pStaDs->bcastDpuIndex;
+        pAddStaParams->bcastMgmtDpuIdx = pStaDs->bcastMgmtDpuIdx;
+        pAddStaParams->ucUcastSig = pStaDs->ucUcastSig;
+        pAddStaParams->ucBcastSig = pStaDs->ucBcastSig;
+        pAddStaParams->ucMgmtSig = pStaDs->ucMgmtSig;
+        pAddStaParams->bssIdx =  pStaDs->bssId;
+    }
+#endif
+
     //we need to defer the message until we get the response back from HAL.
     if (pAddStaParams->respReqd)
         SET_LIM_PROCESS_DEFD_MESGS(pMac, false);
 
-    msgQ.type = WDA_ADD_STA_REQ;
+#ifdef SAP_AUTH_OFFLOAD
+    if (pMac->sap_auth_offload && LIM_IS_AP_ROLE(psessionEntry))
+        msgQ.type = WDA_SAP_OFL_ADD_STA;
+    else
+        msgQ.type = WDA_ADD_STA_REQ;
+#else
+        msgQ.type = WDA_ADD_STA_REQ;
+#endif
 
     msgQ.reserved = 0;
     msgQ.bodyptr = pAddStaParams;
@@ -2654,6 +2745,8 @@ limDelSta(
     tpDeleteStaParams pDelStaParams = NULL;
     tSirMsgQ msgQ;
     tSirRetStatus     retCode = eSIR_SUCCESS;
+    tANI_U8 channelNum = 0;
+    tANI_U32 cfgValue = 0;
 
     pDelStaParams = vos_mem_malloc(sizeof( tDeleteStaParams ));
     if (NULL == pDelStaParams)
@@ -2663,6 +2756,18 @@ limDelSta(
     }
 
     vos_mem_set((tANI_U8 *) pDelStaParams, sizeof(tDeleteStaParams), 0);
+
+    wlan_cfgGetInt(pMac, WNI_CFG_ACTIVE_PASSIVE_CON, &cfgValue);
+
+    channelNum = limGetCurrentOperatingChannel(pMac);
+    limLog(pMac, LOG1, FL("Current Operating channel is %d"), channelNum);
+    if (!cfgValue && (eLIM_STA_ROLE == GET_LIM_SYSTEM_ROLE(psessionEntry)) &&
+         limIsconnectedOnDFSChannel(channelNum))
+    {
+        limCovertChannelScanType(pMac, channelNum, false);
+        pMac->lim.dfschannelList.timeStamp[channelNum] = 0;
+    }
+
 
   //
   // DPH contains the STA index only for "peer" STA entries.
@@ -2700,30 +2805,53 @@ limDelSta(
         pDelStaParams->respReqd = 0;
     else
     {
-        //when limDelSta is called from processSmeAssocCnf then mlmState is already set properly.
-        if(eLIM_MLM_WT_ASSOC_DEL_STA_RSP_STATE != GET_LIM_STA_CONTEXT_MLM_STATE(pStaDs))
-        {
-            MTRACE(macTrace(pMac, TRACE_CODE_MLM_STATE, psessionEntry->peSessionId, eLIM_MLM_WT_DEL_STA_RSP_STATE));
-            SET_LIM_STA_CONTEXT_MLM_STATE(pStaDs, eLIM_MLM_WT_DEL_STA_RSP_STATE);
-        }
-        if ( (eLIM_STA_ROLE == GET_LIM_SYSTEM_ROLE(psessionEntry)) || 
-             (eLIM_BT_AMP_STA_ROLE == GET_LIM_SYSTEM_ROLE(psessionEntry)) )
-        {
-            MTRACE(macTrace(pMac, TRACE_CODE_MLM_STATE, psessionEntry->peSessionId, eLIM_MLM_WT_DEL_STA_RSP_STATE));
+        if (pStaDs->staType != STA_ENTRY_TDLS_PEER) {
+              /**
+               * when limDelSta is called from processSmeAssocCnf
+               * then mlmState is already set properly.
+               */
+              if(eLIM_MLM_WT_ASSOC_DEL_STA_RSP_STATE !=
+                 GET_LIM_STA_CONTEXT_MLM_STATE(pStaDs)) {
+                    MTRACE(macTrace
+                           (pMac, TRACE_CODE_MLM_STATE,
+                           psessionEntry->peSessionId,
+                           eLIM_MLM_WT_DEL_STA_RSP_STATE));
+                    SET_LIM_STA_CONTEXT_MLM_STATE(pStaDs,
+                           eLIM_MLM_WT_DEL_STA_RSP_STATE);
+              }
+             if ((eLIM_STA_ROLE ==
+                  GET_LIM_SYSTEM_ROLE(psessionEntry)) ||
+                 (eLIM_BT_AMP_STA_ROLE ==
+                  GET_LIM_SYSTEM_ROLE(psessionEntry))) {
+                       MTRACE(macTrace(pMac, TRACE_CODE_MLM_STATE,
+                                       psessionEntry->peSessionId,
+                                       eLIM_MLM_WT_DEL_STA_RSP_STATE));
 
-            psessionEntry->limMlmState = eLIM_MLM_WT_DEL_STA_RSP_STATE; 
-    
+                       psessionEntry->limMlmState =
+                               eLIM_MLM_WT_DEL_STA_RSP_STATE;
+             }
+
         }
-        pDelStaParams->respReqd = 1;
-        //we need to defer the message until we get the response back from HAL.
+        /**
+         * we need to defer the message until we get the
+         * response back from HAL.
+         */
         SET_LIM_PROCESS_DEFD_MESGS(pMac, false);
+        pDelStaParams->respReqd = 1;
     }
 
     /* Update PE session ID*/
     pDelStaParams->sessionId = psessionEntry->peSessionId;
     
     pDelStaParams->status  = eHAL_STATUS_SUCCESS;
+#ifdef SAP_AUTH_OFFLOAD
+    if (pMac->sap_auth_offload && LIM_IS_AP_ROLE(psessionEntry))
+        msgQ.type = WDA_SAP_OFL_DEL_STA;
+    else
+        msgQ.type = WDA_DELETE_STA_REQ;
+#else
     msgQ.type = WDA_DELETE_STA_REQ;
+#endif
     msgQ.reserved = 0;
     msgQ.bodyptr = pDelStaParams;
     msgQ.bodyval = 0;
@@ -2917,7 +3045,8 @@ limAddStaSelf(tpAniSirGlobal pMac,tANI_U16 staIdx, tANI_U8 updateSta, tpPESessio
         {
             pAddStaParams->greenFieldCapable = limGetHTCapability( pMac, eHT_GREENFIELD, psessionEntry);
             pAddStaParams->txChannelWidthSet =
-                  pMac->roam.configParam.channelBondingMode5GHz;
+                  pMac->roam.configParam.channelBondingMode5GHz ^
+                  pMac->roam.configParam.channelBondingMode24GHz;
             // pAddStaParams->txChannelWidthSet = limGetHTCapability( pMac, eHT_SUPPORTED_CHANNEL_WIDTH_SET, psessionEntry);
             pAddStaParams->mimoPS             = limGetHTCapability( pMac, eHT_MIMO_POWER_SAVE, psessionEntry );
             pAddStaParams->rifsMode           = limGetHTCapability( pMac, eHT_RIFS_MODE, psessionEntry );

@@ -563,8 +563,7 @@ ifeq ($(CONFIG_PRIMA_WLAN_BTAMP),y)
 INCS +=		$(BAP_INC)
 endif
 
-OBJS :=		$(BAP_OBJS) \
-		$(DXE_OBJS) \
+OBJS :=		$(DXE_OBJS) \
 		$(HDD_OBJS) \
 		$(MAC_OBJS) \
 		$(SAP_OBJS) \
@@ -748,9 +747,7 @@ CDEFINES += -DCONFIG_ENABLE_LINUX_REG
 endif
 
 # Enable feature SAP Authentication Offload
-ifeq ($(SAP_AUTH_OFFLOAD), y)
 CDEFINES += -DSAP_AUTH_OFFLOAD
-endif
 
 ifeq ($(CONFIG_WLAN_FEATURE_AP_FIND), y)
 CDEFINES += -DWLAN_FEATURE_APFIND

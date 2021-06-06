@@ -68,22 +68,6 @@ static unsigned long lowmem_deathpending_timeout;
 			pr_info(x);			\
 	} while (0)
 
-static bool lmk_whitelist(char *name)
-{
-	bool ret = false;
-	if (name == NULL)
-		return ret;
-
-	if ((!strcmp(name, "com.android.launcher")) ||
-		(!strcmp(name, "magiskd")) ||
-		(!strcmp(name, "com.headuck.headuckblocker.dev")))
-	{
-		ret = true;
-	}
-
-	return ret;
-}
-
 static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 {
 	struct task_struct *tsk;
@@ -153,7 +137,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 		}
 		tasksize = get_mm_rss(p->mm);
 		task_unlock(p);
-		if ((tasksize <= 0) || (lmk_whitelist(p->comm) == true))
+		if (tasksize <= 0)
 			continue;
 		if (selected) {
 			if (oom_score_adj < selected_oom_score_adj)

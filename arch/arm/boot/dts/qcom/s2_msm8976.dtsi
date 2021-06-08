@@ -145,7 +145,6 @@
 #include "msm8976-smp2p.dtsi"
 #include "msm8976-bus.dtsi"
 #include "msm8976-jtag.dtsi"
-#include "msm8976-coresight.dtsi"
 #include "msm8976-pm.dtsi"
 #include "msm8976-gpu.dtsi"
 #include "msm8976-mdss-pll.dtsi"

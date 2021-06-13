@@ -649,6 +649,7 @@
 };
 
 &pmi8950_charger {
+	qcom,battery-data = <&qrd_batterydata>;
 	qcom,float-voltage-mv = <4400>;
 	qcom,chg-led-sw-controls;
 	qcom,thermal-mitigation = <2000 1500 700 600 0>;
@@ -674,7 +675,6 @@
 	qcom,ext-sense-type;
 	qcom,fg-delta-soc = <1>;
 	qcom,fg-cutoff-voltage-mv = <3200>;
-	qcom,use-otp-profile;
 };
 
 &i2c_2 {

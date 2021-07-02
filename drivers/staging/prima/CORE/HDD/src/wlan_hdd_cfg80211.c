@@ -15594,6 +15594,12 @@ hdd_spoof_scan(struct wiphy *wiphy, hdd_adapter_t *adapter,
 	hdd_context_t *hdd_ctx = wiphy_priv(wiphy);
 	hdd_config_t *config = hdd_ctx->cfg_ini;
 	VOS_STATUS vos_status;
+#if defined(CFG80211_SCAN_RANDOM_MAC_ADDR) || \
+	(LINUX_VERSION_CODE >= KERNEL_VERSION(4, 4, 0))
+
+	uint8_t random_mac[VOS_MAC_ADDRESS_LEN];
+	eHalStatus hal_status;
+#endif
 
 	csr_scan->nl_scan = true;
 	csr_scan->scan_randomize = false;
@@ -15606,9 +15612,6 @@ hdd_spoof_scan(struct wiphy *wiphy, hdd_adapter_t *adapter,
 
 #if defined(CFG80211_SCAN_RANDOM_MAC_ADDR) || \
 	(LINUX_VERSION_CODE >= KERNEL_VERSION(4, 4, 0))
-	uint8_t random_mac[VOS_MAC_ADDRESS_LEN];
-	eHalStatus hal_status;
-	
 	if (hdd_is_wiphy_scan_random_support(wiphy)) {
 		if (!hdd_is_nl_scan_random(nl_scan) || is_p2p_scan)
 			return 0;

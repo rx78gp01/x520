@@ -278,7 +278,7 @@ static int sdcardfs_read_super(struct vfsmount *mnt, struct super_block *sb,
 
 	pr_info("sdcardfs: dev_name -> %s\n", dev_name);
 	pr_info("sdcardfs: options -> %s\n", (char *)raw_data);
-	pr_info("sdcardfs: mnt -> %p\n", mnt);
+	pr_info("sdcardfs: mnt -> %pK\n", mnt);
 
 	/* parse lower path */
 	err = kern_path(dev_name, LOOKUP_FOLLOW | LOOKUP_DIRECTORY,
@@ -311,7 +311,7 @@ static int sdcardfs_read_super(struct vfsmount *mnt, struct super_block *sb,
 
 	sb->s_stack_depth = lower_sb->s_stack_depth + 1;
 	if (sb->s_stack_depth > FILESYSTEM_MAX_STACK_DEPTH) {
-		pr_err("esdfs: maximum fs stacking depth exceeded\n");
+		pr_err("sdcardfs: maximum fs stacking depth exceeded\n");
 		err = -EINVAL;
 		goto out_sput;
 	}

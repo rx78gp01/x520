@@ -88,6 +88,15 @@ diff --git a/net/wireguard/compat/compat.h b/net/wireguard/compat/compat.h
  #define ignore_df local_df
  #endif
  
+@@ -1034,7 +1034,7 @@
+ }
+ #endif
+ 
+-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0) && !defined(ISRHEL7)
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0) && !defined(ISRHEL7)
+ #define skb_get_hash skb_get_rxhash
+ #endif
+ 
 -- 
 cgit v1.2.3-4-ga26e
 

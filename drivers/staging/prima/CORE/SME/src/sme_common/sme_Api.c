@@ -1728,7 +1728,10 @@ eHalStatus sme_Open(tHalHandle hHal)
 
       sme_p2pOpen(pMac);
       smeTraceInit(pMac);
+#ifdef TRACE_RECORD
       sme_register_debug_callback();
+#endif
+
 
    }while (0);
 
@@ -3587,12 +3590,14 @@ eHalStatus sme_ScanRequest(tHalHandle hHal, tANI_U8 sessionId, tCsrScanRequest *
                     }
                     else
                     {
+#ifdef TRACE_RECORD
                         smsLog(pMac, LOGE, FL("Scan denied in state %s"
                                "(sub-state %s)"),
                                macTraceGetNeighbourRoamState(
                                pMac->roam.neighborRoamInfo.neighborRoamState),
                                macTraceGetcsrRoamSubState(
                                pMac->roam.curSubState[sessionId]));
+#endif
                         /*HandOff is in progress. So schedule this scan later*/
                         status = eHAL_STATUS_RESOURCES;
                     }
@@ -10126,7 +10131,9 @@ eHalStatus sme_SetMaxTxPower(tHalHandle hHal, tSirMacAddr bssid,
 eHalStatus sme_SetMaxTxPowerPerBand(eCsrBand band, v_S7_t dB,
                   tHalHandle hal)
 {
+#ifdef TRACE_RECORD
     vos_msg_t msg;
+#endif
     eHalStatus status;
     tSmeCmd *set_max_tx_pwr_per_band;
     tpAniSirGlobal mac_ctx = PMAC_STRUCT(hal);

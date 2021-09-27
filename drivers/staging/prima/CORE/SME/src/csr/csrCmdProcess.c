@@ -46,8 +46,13 @@ eHalStatus csrMsgProcessor( tpAniSirGlobal pMac,  void *pMsgBuf )
     eHalStatus status = eHAL_STATUS_SUCCESS;
     tSirSmeRsp *pSmeRsp = (tSirSmeRsp *)pMsgBuf;
 
+#ifdef TRACE_RECORD
     smsLog(pMac, LOG2, FL("Message %d[0x%04X] received in curState %s"
            "and substate %s"),
+#else
+    smsLog(pMac, LOG2, FL("Message %d[0x%04X] received in curState %d"
+           "and substate %d"),
+#endif
            pSmeRsp->messageType, pSmeRsp->messageType,
            macTraceGetcsrRoamState(pMac->roam.curState[pSmeRsp->sessionId]),
            macTraceGetcsrRoamSubState(

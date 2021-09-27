@@ -1208,7 +1208,11 @@ void csrAbortCommand( tpAniSirGlobal pMac, tSmeCmd *pCommand, tANI_BOOLEAN fStop
 
 void csrRoamSubstateChange( tpAniSirGlobal pMac, eCsrRoamSubState NewSubstate, tANI_U32 sessionId)
 {
+#ifdef TRACE_RECORD
     smsLog(pMac, LOG1, FL("CSR RoamSubstate: [ %s <== %s ]"),
+#else
+    smsLog(pMac, LOG1, FL("CSR RoamSubstate: [ %d <== %d ]"),
+#endif
            macTraceGetcsrRoamSubState(NewSubstate),
            macTraceGetcsrRoamSubState(pMac->roam.curSubState[sessionId]));
 
@@ -1224,8 +1228,11 @@ void csrRoamSubstateChange( tpAniSirGlobal pMac, eCsrRoamSubState NewSubstate, t
 eCsrRoamState csrRoamStateChange( tpAniSirGlobal pMac, eCsrRoamState NewRoamState, tANI_U8 sessionId)
 {
     eCsrRoamState PreviousState;
-          
+#ifdef TRACE_RECORD
     smsLog(pMac, LOG1, FL("CSR RoamState[%hu]: [ %s <== %s ]"), sessionId,
+#else
+    smsLog(pMac, LOG1, FL("CSR RoamState[%hu]: [ %d <== %d ]"), sessionId,
+#endif
            macTraceGetcsrRoamState(NewRoamState),
            macTraceGetcsrRoamState(pMac->roam.curState[sessionId]));
 
@@ -3065,7 +3072,11 @@ eHalStatus csrRoamIssueDisassociate( tpAniSirGlobal pMac, tANI_U32 sessionId,
     
     
     smsLog(pMac, LOG2, FL("CSR Attempting to Disassociate Bssid="MAC_ADDRESS_STR
+#ifdef TRACE_RECORD
            " subState = %s reason=%d"),
+#else
+           " subState = %d reason=%d"),
+#endif
            MAC_ADDR_ARRAY(bssId), macTraceGetcsrRoamSubState(NewSubstate),
            reasonCode);
 
@@ -9038,7 +9049,11 @@ void csrRoamingStateMsgProcessor( tpAniSirGlobal pMac, void *pMsgBuf )
         // TODO Session Id need to be acquired in this function
         tANI_U32 sessionId = 0;
     pSmeRsp = (tSirSmeRsp *)pMsgBuf;
+#ifdef TRACE_RECORD
     smsLog(pMac, LOG2, FL("Message %d[0x%04X] received in substate %s"),
+#else
+    smsLog(pMac, LOG2, FL("Message %d[0x%04X] received in substate %d"),
+#endif
            pSmeRsp->messageType, pSmeRsp->messageType,
            macTraceGetcsrRoamSubState(
            pMac->roam.curSubState[pSmeRsp->sessionId]));
@@ -9086,7 +9101,11 @@ void csrRoamingStateMsgProcessor( tpAniSirGlobal pMac, void *pMsgBuf )
 //HO
                  CSR_IS_ROAM_SUBSTATE_DISASSOC_HO( pMac, pSmeRsp->sessionId )         )
             {
+#ifdef TRACE_RECORD
                 smsLog(pMac, LOG1, FL("eWNI_SME_DISASSOC_RSP subState = %s"),
+#else
+                smsLog(pMac, LOG1, FL("eWNI_SME_DISASSOC_RSP subState = %d"),
+#endif
                        macTraceGetcsrRoamSubState(
                        pMac->roam.curSubState[pSmeRsp->sessionId]));
                 csrRoamRoamingStateDisassocRspProcessor( pMac, (tSirSmeDisassocRsp *)pSmeRsp );
@@ -9159,7 +9178,11 @@ void csrRoamingStateMsgProcessor( tpAniSirGlobal pMac, void *pMsgBuf )
 
         default:
             smsLog(pMac, LOG1,
+#ifdef TRACE_RECORD
                    FL("Unexpected message type = %d[0x%X] received in substate %s"),
+#else
+                   FL("Unexpected message type = %d[0x%X] received in substate %d"),
+#endif
                    pSmeRsp->messageType, pSmeRsp->messageType,
                    macTraceGetcsrRoamSubState(
                    pMac->roam.curSubState[pSmeRsp->sessionId]));
@@ -10873,7 +10896,11 @@ void csrRoamCheckForLinkStatusChange( tpAniSirGlobal pMac, tSirSmeRsp *pSirMsg )
                         {
                             smsLog(pMac, LOGW,
                                    FL("Skipping csrScanForCapabilityChange as "
+#ifdef TRACE_RECORD
                                    "CSR is in state %s and sub-state %s"),
+#else
+                                   "CSR is in state %d and sub-state %d"),
+#endif
                                    macTraceGetcsrRoamState(
                                    pMac->roam.curState[sessionId]),
                                    macTraceGetcsrRoamSubState(
@@ -11564,7 +11591,11 @@ void csrRoamWaitForKeyTimeOutHandler(void *pv)
     tCsrRoamSession *pSession = CSR_GET_SESSION( pMac, pInfo->sessionId );
     eHalStatus status = eHAL_STATUS_FAILURE;
 
+#ifdef TRACE_RECORD
     smsLog(pMac, LOGE, FL("WaitForKey timer expired in state=%s sub-state=%s"),
+#else
+    smsLog(pMac, LOGE, FL("WaitForKey timer expired in state=%d sub-state=%d"),
+#endif
            macTraceGetNeighbourRoamState(
            pMac->roam.neighborRoamInfo.neighborRoamState),
            macTraceGetcsrRoamSubState(
@@ -11633,7 +11664,12 @@ eHalStatus csrRoamStartWaitForKeyTimer(tpAniSirGlobal pMac, tANI_U32 interval)
     if (csrNeighborRoamIsHandoffInProgress(pMac))
     {
         /* Disable heartbeat timer when hand-off is in progress */
+
+#ifdef TRACE_RECORD
         smsLog(pMac, LOG2, FL("disabling HB timer in state=%s sub-state=%s"),
+#else
+        smsLog(pMac, LOG2, FL("disabling HB timer in state=%d sub-state=%d"),
+#endif
                macTraceGetNeighbourRoamState(
                pMac->roam.neighborRoamInfo.neighborRoamState),
                macTraceGetcsrRoamSubState(
@@ -11650,7 +11686,11 @@ eHalStatus csrRoamStartWaitForKeyTimer(tpAniSirGlobal pMac, tANI_U32 interval)
 
 eHalStatus csrRoamStopWaitForKeyTimer(tpAniSirGlobal pMac)
 {
+#ifdef TRACE_RECORD
     smsLog(pMac, LOG2, FL("WaitForKey timer stopped in state=%s sub-state=%s"),
+#else
+    smsLog(pMac, LOG2, FL("WaitForKey timer stopped in state=%d sub-state=%d"),
+#endif
            macTraceGetNeighbourRoamState(
            pMac->roam.neighborRoamInfo.neighborRoamState),
            macTraceGetcsrRoamSubState(

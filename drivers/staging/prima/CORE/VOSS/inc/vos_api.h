@@ -76,6 +76,9 @@
 #include <vos_pack_align.h>
 #include <asm/arch_timer.h>
 #include <wlan_qct_wdi_cts.h>
+#ifndef FEATURE_WLAN_DIAG_SUPPORT
+#include "vos_diag_core_log.h"
+#endif
 
 /**
  * enum userspace_log_level - Log level at userspace

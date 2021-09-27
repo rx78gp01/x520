@@ -154,6 +154,8 @@ void hdd_wlan_offload_event(uint8_t type, uint8_t state)
 
    WLAN_VOS_DIAG_EVENT_REPORT(&host_offload, EVENT_OFFLOAD_REQ);
 }
+#else
+#define hdd_wlan_offload_event(type, state) (void)0;
 #endif /* FEATURE_WLAN_DIAG_SUPPORT */
 
 //Callback invoked by PMC to report status of standby request

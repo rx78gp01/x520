@@ -338,7 +338,11 @@ csr_neighbor_roam_preauth_reassoc_rsp_handler(tpAniSirGlobal mac,
     if ((neighbor_roam_info->neighborRoamState !=
                             eCSR_NEIGHBOR_ROAM_STATE_MBB_PREAUTH_REASSOC)) {
         smsLog(mac, LOGE,
+#ifdef TRACE_RECORD
                FL("Preauth response received in state %s"),
+#else
+               FL("Preauth response received in state %d"),
+#endif
                macTraceGetNeighbourRoamState(
                       neighbor_roam_info->neighborRoamState));
         preauth_processed = eHAL_STATUS_FAILURE;

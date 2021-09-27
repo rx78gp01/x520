@@ -43,12 +43,10 @@
 
 #include "aniGlobal.h"
 
-
-#ifdef TRACE_RECORD
-
 #define MAC_TRACE_GET_MODULE_ID(data) ((data >> 8) & 0xff)
 #define MAC_TRACE_GET_MSG_ID(data)       (data & 0xffff)
 
+#ifdef TRACE_RECORD
 
 #define eLOG_NODROP_MISSED_BEACON_SCENARIO 0
 #define eLOG_PROC_DEAUTH_FRAME_SCENARIO 1
@@ -78,6 +76,16 @@ tANI_U8* macTraceGetLimSmeState(tANI_U16 limState);
 tANI_U8* macTraceGetLimMlmState(tANI_U16 mlmState);
 tANI_U8* macTraceGetTLState(tANI_U16 tlState);
 
+#else
+eHalStatus pe_AcquireGlobalLock( tAniSirLim *psPe);
+eHalStatus pe_ReleaseGlobalLock( tAniSirLim *psPe);
+#define macTraceGetHDDWlanConnState(connState) (0)
+#define macTraceGetNeighbourRoamState(neighbourRoamState) (0)
+#define macTraceGetcsrRoamState(csrRoamState) (0)
+#define macTraceGetcsrRoamSubState(csrRoamSubState) (0)
+#define macTraceGetLimSmeState(limState) (0)
+#define macTraceGetLimMlmState(mlmState) (0)
+#define macTraceGetTLState(tlState) (0)
 #endif
 
 #endif

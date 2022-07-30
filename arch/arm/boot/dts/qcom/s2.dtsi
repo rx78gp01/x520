@@ -241,7 +241,6 @@
 };
 
 /* CoreSight */
-#if 0
 &tpiu {
 	pinctrl-names = "sdcard", "trace", "swduart",
 			"swdtrc", "jtag", "spmi";
@@ -264,7 +263,7 @@
 	pinctrl-5 = <&qdsd_clk_spmi &qdsd_cmd_spmi
 			 &qdsd_data0_spmi &qdsd_data3_spmi>;
 };
-#endif
+
 &i2c_4 { /* BLSP1 QUP4 */
 	focaltech@38 {
 		compatible = "focaltech,5x06";

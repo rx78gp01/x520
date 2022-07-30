@@ -113,7 +113,6 @@
 		/* IOMMU Data */
                 iommu = <&gfx_iommu>;
 
-#if 0
 		/* Trace bus */
 		coresight-id = <67>;
 		coresight-name = "coresight-gfx";
@@ -121,7 +120,6 @@
 		coresight-outports = <0>;
 		coresight-child-list = <&funnel_in0>;
 		coresight-child-ports = <4>;
-#endif
 
 		/* Power level configuration */
 		qcom,gpu-fuse-numconfigs = <2>;

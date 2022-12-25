@@ -2062,7 +2062,7 @@ static VOS_STATUS csrNeighborRoamHandleEmptyScanResult(tpAniSirGlobal pMac)
         {
             status = csrNeighborRoamPerformPeriodicScan(pMac, sessionId);
 
-            if (VOS_STATUS_SUCCESS != status)
+            if (eHAL_STATUS_SUCCESS != status)
             {
                  NEIGHBOR_ROAM_DEBUG(pMac, LOGE, " Periodic scan failed to start %d", status);
             }

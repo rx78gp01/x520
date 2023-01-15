@@ -9,9 +9,17 @@ Subject: net: Fix Wireguard compile error
 		fixes: "ipv6: add rcu grace period before freeing fib6_node"
 
 		net: Fix error with ip_select_ident
-
 		Fixes: "ipv4: hash net ptr into fragmentation bucket selection"
 		Fixes: "ipv4: ip_tunnel: use net namespace from rtable not socket"
+		
+		compat: Use utility functions to clear rxhash
+		fixes: "net: Add utility functions to clear rxhash"
+		
+		ipv4: Cache net in compat_iptunnel_xmit
+		
+		compat: iptunnel: don't force DF when MTU is locked
+		Fixes: ipv4: lock mtu in fnhe when received PMTU < net.ipv4.route.min_pmtu
+		
 ---
 
 diff --git a/net/wireguard/compat/dst_cache/dst_cache.c b/net/wireguard/compat/dst_cache/dst_cache.c
@@ -49,12 +57,38 @@ index ae43566..7c85d0e 100644
  static inline __sum16 udp_v4_check(int len, __be32 saddr,
  				   __be32 daddr, __wsum base)
  {
+@@ -141,6 +141,7 @@ static void __compat_iptunnel_xmit(struct rtable *rt, struct sk_buff *skb,
+ 		  __be32 src, __be32 dst, __u8 proto,
+ 		  __u8 tos, __u8 ttl, __be16 df, bool xnet)
+ {
++	struct net *net = dev_net(rt->dst.dev);
+ 	struct iphdr *iph;
+ 	struct pcpu_tstats *tstats = this_cpu_ptr(skb->dev->tstats);
+ 
+@@ -146,7 +146,7 @@ static void __compat_iptunnel_xmit(struct rtable *rt, struct sk_buff *skb,
+ 
+ 	skb_scrub_packet(skb, xnet);
+ 
+-	skb->rxhash = 0;
++	skb_clear_hash(skb);
+ 	skb_dst_set(skb, &rt->dst);
+ 	memset(IPCB(skb), 0, sizeof(*IPCB(skb)));
+ 
+@@ -158,7 +158,7 @@ static void __compat_iptunnel_xmit(struct rtable *rt, struct sk_buff *skb,
+ 
+ 	iph->version	=	4;
+ 	iph->ihl	=	sizeof(struct iphdr) >> 2;
+-	iph->frag_off	=	df;
++	iph->frag_off   =       ip_mtu_locked(&rt->dst) ? 0 : df;
+ 	iph->protocol	=	proto;
+ 	iph->tos	=	tos;
+ 	iph->daddr	=	dst;
 @@ -166,7 +166,7 @@
  #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 53)
  	__ip_select_ident(iph, &rt->dst, (skb_shinfo(skb)->gso_segs ?: 1) - 1);
  #else
 -	__ip_select_ident(iph, skb_shinfo(skb)->gso_segs ?: 1);
-+	__ip_select_ident(dev_net(rt->dst.dev), iph, skb_shinfo(skb)->gso_segs ?: 1);
++	__ip_select_ident(net, iph, skb_shinfo(skb)->gso_segs ?: 1);
  #endif
  
  	iptunnel_xmit(skb, skb->dev);

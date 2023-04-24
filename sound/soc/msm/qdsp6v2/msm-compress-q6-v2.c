@@ -64,7 +64,7 @@
 #define COMPR_PLAYBACK_MAX_FRAGMENT_SIZE (128 * 1024)
 #define COMPR_PLAYBACK_MIN_NUM_FRAGMENTS (4)
 #define COMPR_PLAYBACK_MAX_NUM_FRAGMENTS (16 * 4)
-#define COMPR_PLAYBACK_DSP_FRAGMEMT_SIZE (32 * 1024)
+#define COMPR_PLAYBACK_DSP_FRAGMENT_SIZE (48 * 1024) // 24bit 192khz needs 45x1024
 
 #define COMPRESSED_LR_VOL_MAX_STEPS	0x2000
 const DECLARE_TLV_DB_LINEAR(msm_compr_vol_gain, 0,
@@ -364,9 +364,15 @@ static int msm_compr_send_buffer(struct msm_compr_audio *prtd)
 		buffer_length = bytes_available;
 	else if (bytes_available > prtd->cstream->runtime->fragment_size)
 		buffer_length = prtd->cstream->runtime->fragment_size;
-	else
-		buffer_length =
-			(bytes_available / prtd->dsp_fragment_size) * prtd->dsp_fragment_size;
+	else {
+		/*
+		 * do_div divides in place and bytes_available is modified
+		 * to the quotient after the division. Essentially, write
+		 * the remaining data in dsp_fragment_size'd chunks
+		 */
+		do_div(bytes_available, prtd->dsp_fragment_size);
+		buffer_length = bytes_available * prtd->dsp_fragment_size;
+	}
 
 	if (prtd->byte_offset + buffer_length > prtd->buffer_size) {
 		buffer_length = (prtd->buffer_size - prtd->byte_offset);
@@ -1051,19 +1057,25 @@ static int msm_compr_configure_dsp(struct snd_compr_stream *cstream)
 	/* use smaller DSP fragments to ease gapless transition by reducing the
 	 * minimum amount of data necessary to start DSP decoding
 	 */
-	if (runtime->fragment_size < COMPR_PLAYBACK_DSP_FRAGMEMT_SIZE) {
+	if (runtime->fragment_size < COMPR_PLAYBACK_DSP_FRAGMENT_SIZE) {
 		prtd->dsp_fragment_size = runtime->fragment_size;
-	} else if ((runtime->fragment_size % COMPR_PLAYBACK_DSP_FRAGMEMT_SIZE) != 0) {
-		pr_err("%s: Invalid fragment size: %d", __func__, runtime->fragment_size);
-		return -EINVAL;
+	} else if ((runtime->fragment_size %
+			COMPR_PLAYBACK_DSP_FRAGMENT_SIZE) != 0) {
+		prtd->dsp_fragment_size = runtime->fragment_size;
+		pr_debug("%s: runtime fragment size %d is not a multiple of %d\n",
+				__func__, runtime->fragment_size,
+				COMPR_PLAYBACK_DSP_FRAGMENT_SIZE);
 	} else {
-		prtd->dsp_fragment_size = COMPR_PLAYBACK_DSP_FRAGMEMT_SIZE;
+		prtd->dsp_fragment_size = COMPR_PLAYBACK_DSP_FRAGMENT_SIZE;
 	}
-	prtd->dsp_fragment_ratio = runtime->fragment_size / prtd->dsp_fragment_size;
-	prtd->dsp_fragments = runtime->fragments * prtd->dsp_fragment_ratio;
+	prtd->dsp_fragment_ratio = runtime->fragment_size /
+					prtd->dsp_fragment_size;
+	prtd->dsp_fragments = runtime->fragments *
+					prtd->dsp_fragment_ratio;
 
 	if (prtd->dsp_fragments > COMPR_PLAYBACK_MAX_NUM_FRAGMENTS) {
-		pr_err("%s: Invalid fragment count: %d", __func__, prtd->dsp_fragments);
+		pr_err("%s: Invalid fragment count: %d", __func__,
+				prtd->dsp_fragments);
 		return -EINVAL;
 	}
 
